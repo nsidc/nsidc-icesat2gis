@@ -224,3 +224,22 @@ def lines_from_atl08_points(
     )
 
     return all_lines
+
+
+def read_lines_from_atl08(
+    *,
+    filepath: Path,
+    gap_threshold_meters: int = 500,
+    isolated_point_line_meters: int = 17,  # 17m is the approx. ground spot size of IceSat2.
+    simplify_line_tolerance: None | float = None,
+) -> gpd.GeoDataFrame:
+    points = read_points_from_atl08(filepath=filepath)
+
+    lines = lines_from_atl08_points(
+        points=points,
+        gap_threshold_meters=gap_threshold_meters,
+        simplify_line_tolerance=simplify_line_tolerance,
+        isolated_point_line_meters=isolated_point_line_meters,
+    )
+
+    return lines
