@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pyproj
 
-from icesat2gis.read_geom import (
+from nsidc.icesat2gis.read_geom import (
     _linestring_for_isolated_point,
     lines_from_atl08_points,
     read_points_from_atl08,

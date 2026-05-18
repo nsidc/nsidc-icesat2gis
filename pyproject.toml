@@ -2,9 +2,12 @@
 requires = ["uv_build>=0.7.19,<0.12"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = "nsidc.icesat2gis"
+namespace = true
 
 [project]
-name = "icesat2gis"
+name = "nsidc-icesat2gis"
 version = "0.1.0"
 authors = [
   { name = "Trey Stafford", email = "trey.stafford@colorado.edu" },
@@ -73,7 +76,7 @@ log_level = "INFO"
 testpaths = [
   "tests",
 ]
-pythonpath = ["src"]
+pythonpath = ["src/nsidc"]
 
 
 [tool.coverage]
@@ -84,7 +87,7 @@ report.exclude_also = [
 ]
 
 [tool.mypy]
-files = ["src", "tests"]
+files = ["src/nsidc", "tests"]
 python_version = "3.11"
 warn_unused_configs = true
 strict = true
@@ -92,6 +95,11 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 warn_unreachable = true
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
+
+# Needed to work with our namespaced package! See:
+# https://mypy.readthedocs.io/en/stable/running_mypy.html#mapping-paths-to-modules
+mypy_path = "$MYPY_CONFIG_FILE_DIR/src"
+explicit_package_bases = true
 
 [[tool.mypy.overrides]]
 module = [

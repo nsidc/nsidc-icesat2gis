@@ -42,7 +42,7 @@ def pylint(session: nox.Session) -> None:
     # This needs to be installed into the package environment, and is slower
     # than a pre-commit check
     session.install("-e.", "pylint>=3.2")
-    session.run("pylint", "icesat2gis", *session.posargs)
+    session.run("pylint", "nsidc.icesat2gis", *session.posargs)
 
 
 @nox.session(python=[PYTHON_VERSION])
