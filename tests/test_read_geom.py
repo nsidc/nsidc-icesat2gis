@@ -19,16 +19,9 @@ def test_read_point_geoms_from_atl08(atl08_test_filepath):
     # test data - ATL08 generally has 6 ground tracks.)
     assert len(set(points.ground_track)) == 5
 
-    for core_var in (
-        "h_canopy",
-        "h_canopy_uncertainty",
-        "h_median_canopy",
-        "photon_rate_can",
-        "h_te_best_fit",
-        "h_te_uncertainty",
-        "photon_rate_te",
-        "terrain_slope",
-    ):
+    for core_var in [
+        var_path.rsplit("/", maxsplit=1)[-1] for var_path in ATL08_DEFAULT_GT_CORE_VARS
+    ]:
         assert points[core_var] is not None
 
 
