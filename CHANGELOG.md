@@ -5,6 +5,8 @@
 - Remove aggregate statistics fields from ATL08 linestrings (e.g.,
   `h_canopy_mean`). These are not very informative on linestring geometries
   because they cover such a large area.
+- Add core variables identified in
+  [NDS-10](https://bugs.earthdata.nasa.gov/browse/NDS-10) to points.
 
 # v0.2.0 (2026-05-08)
 

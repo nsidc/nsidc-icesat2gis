@@ -36,17 +36,35 @@ def _read_points_for_gt(
         print(msg)
         raise IceSatMissingDataError(msg) from e
 
+    # Extract variables
     lats = ds.latitude
     lons = ds.longitude
     canopy_heights = ds.canopy.h_canopy
+    canopy_heights_uncertainty = ds.canopy.h_canopy_uncertainty
+    canopy_heights_median = ds.canopy.h_median_canopy
+    canopy_photon_rate = ds.canopy.photon_rate_can
+    terrain_height_best_fit = ds.terrain.h_te_best_fit
+    terrain_height_uncertainty = ds.terrain.h_te_uncertainty
+    terrain_photon_rate = ds.terrain.h_te_uncertainty
+    terrain_slope = ds.terrain.terrain_slope
     delta_time = ds.delta_time
 
+    # Construct gdf
     gdf = gpd.GeoDataFrame(
         data={
+            # Reference info
             "ground_track": [ground_track] * len(lons),
             "source_filename": [filepath.name] * len(lons),
-            "h_canopy": canopy_heights,
             "delta_time": delta_time,
+            # Core variables
+            "h_canopy": canopy_heights,
+            "h_canopy_uncertainty": canopy_heights_uncertainty,
+            "h_median_canopy": canopy_heights_median,
+            "photon_rate_can": canopy_photon_rate,
+            "h_te_best_fit": terrain_height_best_fit,
+            "h_te_uncertainty": terrain_height_uncertainty,
+            "photon_rate_te": terrain_photon_rate,
+            "terrain_slope": terrain_slope,
         },
         geometry=gpd.points_from_xy(lons, lats),
         crs="EPSG:4326",
