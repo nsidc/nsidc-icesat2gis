@@ -1,3 +1,9 @@
+"""Create test atl08 data for unit tests.
+
+NOTE: This script relies on the assumption that the user has downloaded
+`ATL08_20260118035703_05313006_007_01.h5` and placed it ../data/.
+"""
+
 from pathlib import Path
 
 import xarray as xr
@@ -21,7 +27,9 @@ if __name__ == "__main__":
     # Remove the existing test data file if it already exists.
     test_data_filepath.unlink(missing_ok=True)
 
-    for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
+    # Note: "gt2l" is intentionally missing to test cases where one or more
+    # ground tracks have no data.
+    for ground_track in ("gt1l", "gt1r", "gt2r", "gt3l", "gt3r"):
         ds = xr.open_datatree(
             SOURCE_DATA_PATH,
             group=f"{ground_track}/land_segments/",

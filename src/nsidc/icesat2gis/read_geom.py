@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import cast
+from typing import Literal, cast, get_args
 
 import geopandas as gpd
 import numpy as np
@@ -9,37 +9,69 @@ from pyproj import Geod
 from shapely import LineString, Point
 from shapely.geometry import MultiLineString
 
+from nsidc.icesat2gis.exceptions import IceSatMissingDataError
 
-def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
-    """Return a GeoDataFrame containing points representing ground tracks."""
-    gdfs = []
-    for ground_track in ("gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"):
+GroundTrack = Literal["gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"]
+
+
+def _read_points_for_gt(
+    *, ground_track: GroundTrack, filepath: Path
+) -> gpd.GeoDataFrame:
+    """Reads 100m segment points from ATL08 for the given ground track.
+
+    Raises an `IceSatMissingDataError` when a ground track is missing data
+    (either the ground track group or the ground track's `land_segments` group
+    is missing).
+    """
+    try:
         ds = xr.open_datatree(
             filepath,
             group=f"{ground_track}/land_segments/",
             chunks={},
         )
-        lats = ds.latitude
-        lons = ds.longitude
-        canopy_heights = ds.canopy.h_canopy
-        delta_time = ds.delta_time
+    except (OSError, KeyError) as e:
+        # This could be because the ground track group is missing, or the
+        # `land_segments` group is missing.
+        msg = f"No `land_segment` data for {ground_track} from {filepath}: {e}"
+        print(msg)
+        raise IceSatMissingDataError(msg) from e
 
-        gdf = gpd.GeoDataFrame(
-            data={
-                "ground_track": [ground_track] * len(lons),
-                "source_filename": [filepath.name] * len(lons),
-                "h_canopy": canopy_heights,
-                "delta_time": delta_time,
-            },
-            geometry=gpd.points_from_xy(lons, lats),
-            crs="EPSG:4326",
-        )
+    lats = ds.latitude
+    lons = ds.longitude
+    canopy_heights = ds.canopy.h_canopy
+    delta_time = ds.delta_time
 
-        # Localize the timestamp to UTC. Otherwise it inherits the system TZ
-        # (e.g., MST).
-        gdf["delta_time"] = gdf.delta_time.dt.tz_localize("UTC")
+    gdf = gpd.GeoDataFrame(
+        data={
+            "ground_track": [ground_track] * len(lons),
+            "source_filename": [filepath.name] * len(lons),
+            "h_canopy": canopy_heights,
+            "delta_time": delta_time,
+        },
+        geometry=gpd.points_from_xy(lons, lats),
+        crs="EPSG:4326",
+    )
 
-        gdfs.append(gdf)
+    # Localize the timestamp to UTC. Otherwise it inherits the system TZ
+    # (e.g., MST).
+    gdf["delta_time"] = gdf.delta_time.dt.tz_localize("UTC")
+
+    return gdf
+
+
+def read_points_from_atl08(*, filepath: Path) -> gpd.GeoDataFrame:
+    """Return a GeoDataFrame containing points representing ground tracks."""
+    gdfs = []
+    for ground_track in get_args(GroundTrack):
+        try:
+            gdf = _read_points_for_gt(ground_track=ground_track, filepath=filepath)
+            gdfs.append(gdf)
+        except IceSatMissingDataError:
+            continue
+
+    if not gdfs:
+        msg = f"Found no valid ground track data for {filepath}"
+        raise IceSatMissingDataError(msg)
 
     combined_gdf = pd.concat(gdfs)
     combined_gdf.attrs["source_filename"] = filepath.name

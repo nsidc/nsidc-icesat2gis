@@ -8,7 +8,7 @@ namespace = true
 
 [project]
 name = "nsidc-icesat2gis"
-version = "0.2.0"
+version = "0.3.0"
 authors = [
   { name = "Trey Stafford", email = "trey.stafford@colorado.edu" },
 ]
@@ -196,7 +196,7 @@ messages_control.disable = [
 ]
 
 [tool.bumpversion]
-current_version = "0.2.0"
+current_version = "0.3.0"
 commit = false
 tag = false
 
