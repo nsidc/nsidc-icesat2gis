@@ -32,11 +32,6 @@ def test_lines_from_atl08_points(atl08_test_filepath):
     # One line per expected ground track
     assert len(lines.ground_track) == 6
 
-    assert lines.h_canopy_min is not None
-    assert lines.h_canopy_max is not None
-    assert lines.h_canopy_std is not None
-    assert lines.h_canopy_mean is not None
-
     assert lines.delta_time_start is not None
     assert lines.delta_time_end is not None
 

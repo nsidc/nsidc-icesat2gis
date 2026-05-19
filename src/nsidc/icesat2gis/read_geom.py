@@ -219,10 +219,6 @@ def lines_from_atl08_points(
         # Track multilinestring and attrs per ground track
         multi_linestrings[ground_track] = {
             "geometry": multi_line,
-            "h_canopy_mean": points_for_track.h_canopy.mean(),
-            "h_canopy_min": points_for_track.h_canopy.min(),
-            "h_canopy_max": points_for_track.h_canopy.max(),
-            "h_canopy_std": points_for_track.h_canopy.std(),
             "delta_time_start": points_for_track.delta_time.min(),
             "delta_time_end": points_for_track.delta_time.max(),
         }
@@ -232,18 +228,6 @@ def lines_from_atl08_points(
             "ground_track": list(multi_linestrings.keys()),
             "source_filename": [list(set(points.source_filename))[0]]
             * len(multi_linestrings),
-            "h_canopy_min": [
-                line["h_canopy_min"] for line in multi_linestrings.values()
-            ],
-            "h_canopy_max": [
-                line["h_canopy_max"] for line in multi_linestrings.values()
-            ],
-            "h_canopy_mean": [
-                line["h_canopy_mean"] for line in multi_linestrings.values()
-            ],
-            "h_canopy_std": [
-                line["h_canopy_std"] for line in multi_linestrings.values()
-            ],
             "delta_time_start": [
                 line["delta_time_start"] for line in multi_linestrings.values()
             ],
