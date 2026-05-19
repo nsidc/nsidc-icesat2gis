@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pyproj
 import pytest
 
@@ -11,14 +9,9 @@ from nsidc.icesat2gis.read_geom import (
     read_points_from_atl08,
 )
 
-_THIS_DIR = Path(__file__).parent
-TEST_DATA_DIR = _THIS_DIR / "data"
 
-
-def test_read_point_geoms_from_atl08():
-    test_data_path = TEST_DATA_DIR / "test_atl08.h5"
-
-    points = read_points_from_atl08(filepath=test_data_path)
+def test_read_point_geoms_from_atl08(atl08_test_filepath):
+    points = read_points_from_atl08(filepath=atl08_test_filepath)
 
     assert points is not None
     # One line per expected ground track (one is intentionally missing in the
@@ -30,10 +23,8 @@ def test_read_point_geoms_from_atl08():
     assert points.delta_time is not None
 
 
-def test_lines_from_atl08_points():
-    test_data_path = TEST_DATA_DIR / "test_atl08.h5"
-
-    points = read_points_from_atl08(filepath=test_data_path)
+def test_lines_from_atl08_points(atl08_test_filepath):
+    points = read_points_from_atl08(filepath=atl08_test_filepath)
 
     lines = lines_from_atl08_points(points=points)
 
@@ -50,10 +41,8 @@ def test_lines_from_atl08_points():
     assert lines.delta_time_end is not None
 
 
-def test__linestring_for_isolated_point():
-    test_data_path = TEST_DATA_DIR / "test_atl08.h5"
-
-    points = read_points_from_atl08(filepath=test_data_path)
+def test__linestring_for_isolated_point(atl08_test_filepath):
+    points = read_points_from_atl08(filepath=atl08_test_filepath)
 
     points_for_gt = points[points["ground_track"] == "gt3r"]
     # Filter down to just the first and last points
@@ -87,24 +76,20 @@ def test__linestring_for_isolated_point():
     assert round(distance[0]) == expected_line_len_meters
 
 
-def test__read_points_for_gt():
-    test_data_path = TEST_DATA_DIR / "test_atl08.h5"
-
+def test__read_points_for_gt(atl08_test_filepath):
     points_gdf = _read_points_for_gt(
         ground_track="gt1l",
-        filepath=test_data_path,
+        filepath=atl08_test_filepath,
     )
 
     assert points_gdf is not None
     assert len(points_gdf) > 0
 
 
-def test__read_points_for_gt_missing_raises_error():
-    test_data_path = TEST_DATA_DIR / "test_atl08.h5"
-
+def test__read_points_for_gt_missing_raises_error(atl08_test_filepath):
     with pytest.raises(IceSatMissingDataError):
         _read_points_for_gt(
             # We expect gt2l ground track to be missing from the test data.
             ground_track="gt2l",
-            filepath=test_data_path,
+            filepath=atl08_test_filepath,
         )
