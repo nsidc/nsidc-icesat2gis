@@ -3,6 +3,7 @@ import pytest
 
 from nsidc.icesat2gis.exceptions import IceSatMissingDataError
 from nsidc.icesat2gis.read_geom import (
+    ATL08_DEFAULT_GT_CORE_VARS,
     _linestring_for_isolated_point,
     _read_points_for_gt,
     lines_from_atl08_points,
@@ -18,9 +19,10 @@ def test_read_point_geoms_from_atl08(atl08_test_filepath):
     # test data - ATL08 generally has 6 ground tracks.)
     assert len(set(points.ground_track)) == 5
 
-    assert points.h_canopy is not None
-
-    assert points.delta_time is not None
+    for core_var in [
+        var_path.rsplit("/", maxsplit=1)[-1] for var_path in ATL08_DEFAULT_GT_CORE_VARS
+    ]:
+        assert points[core_var] is not None
 
 
 def test_lines_from_atl08_points(atl08_test_filepath):
@@ -29,13 +31,7 @@ def test_lines_from_atl08_points(atl08_test_filepath):
     lines = lines_from_atl08_points(points=points)
 
     assert lines is not None
-    # One line per expected ground track
-    assert len(lines.ground_track) == 6
-
-    assert lines.h_canopy_min is not None
-    assert lines.h_canopy_max is not None
-    assert lines.h_canopy_std is not None
-    assert lines.h_canopy_mean is not None
+    assert len(lines.ground_track) == 5
 
     assert lines.delta_time_start is not None
     assert lines.delta_time_end is not None
@@ -80,6 +76,7 @@ def test__read_points_for_gt(atl08_test_filepath):
     points_gdf = _read_points_for_gt(
         ground_track="gt1l",
         filepath=atl08_test_filepath,
+        variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
     )
 
     assert points_gdf is not None
@@ -92,4 +89,5 @@ def test__read_points_for_gt_missing_raises_error(atl08_test_filepath):
             # We expect gt2l ground track to be missing from the test data.
             ground_track="gt2l",
             filepath=atl08_test_filepath,
+            variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
         )

@@ -4,9 +4,12 @@ NOTE: This script relies on the assumption that the user has downloaded
 `ATL08_20260118035703_05313006_007_01.h5` and placed it ../data/.
 """
 
+from collections import defaultdict
 from pathlib import Path
 
 import xarray as xr
+
+from nsidc.icesat2gis.read_geom import ATL08_DEFAULT_GT_CORE_VARS
 
 TEST_DIR = Path(__file__).parent / ".." / "tests"
 
@@ -62,26 +65,29 @@ if __name__ == "__main__":
             coords="minimal",
         )
 
-        canopy_heights = ds.canopy.h_canopy
-        filtered_canopy_heights = xr.concat(
-            [
-                # First 50 observations
-                canopy_heights.isel(delta_time=slice(0, 50)),
-                # One isolated point in the middle
-                canopy_heights.isel(delta_time=int(len(canopy_heights) / 2)),
-                # Last 50 observations
-                canopy_heights.isel(delta_time=slice(-50, None)),
-            ],
-            dim="delta_time",
-            coords="minimal",
-        )
+        variables = defaultdict(dict)
+        for var_path in ATL08_DEFAULT_GT_CORE_VARS:
+            group_name, var_name = var_path.split("/")
+            data_var = ds[var_path]
+            variables[group_name][var_name] = xr.concat(
+                [
+                    # First 50 observations
+                    data_var.isel(delta_time=slice(0, 50)),
+                    # One isolated point in the middle
+                    data_var.isel(delta_time=int(len(data_var) / 2)),
+                    # Last 50 observations
+                    data_var.isel(delta_time=slice(-50, None)),
+                ],
+                dim="delta_time",
+                coords="minimal",
+            )
 
         test_ds = xr.DataTree.from_dict(
             {
                 f"{ground_track}/land_segments/": {
                     "latitude": filtered_lats,
                     "longitude": filtered_lons,
-                    "canopy": {"h_canopy": filtered_canopy_heights},
+                    **variables,
                 }
             },
             nested=True,
