@@ -9,7 +9,7 @@ from pathlib import Path
 
 import xarray as xr
 
-from nsidc.icesat2gis.read_geom import ATL08_DEFAULT_GT_CORE_VARS
+from nsidc.icesat2gis.atl08 import ATL08_DEFAULT_GT_CORE_VARS
 
 TEST_DIR = Path(__file__).parent / ".." / "tests"
 

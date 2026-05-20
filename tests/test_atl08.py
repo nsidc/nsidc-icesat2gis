@@ -1,14 +1,14 @@
 import pyproj
 import pytest
 
-from nsidc.icesat2gis.exceptions import IceSatMissingDataError
-from nsidc.icesat2gis.read_geom import (
+from nsidc.icesat2gis.atl08 import (
     ATL08_DEFAULT_GT_CORE_VARS,
     _linestring_for_isolated_point,
     _read_points_for_gt,
     lines_from_atl08_points,
     read_points_from_atl08,
 )
+from nsidc.icesat2gis.exceptions import IceSatMissingDataError
 
 
 def test_read_point_geoms_from_atl08(atl08_test_filepath):
