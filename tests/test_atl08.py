@@ -9,7 +9,7 @@ from nsidc.icesat2gis.atl08 import (
     lines_from_atl08_points,
     read_points_from_atl08,
 )
-from nsidc.icesat2gis.exceptions import IceSat2MissingDataError
+from nsidc.icesat2gis.exceptions import ICESat2MissingDataError
 
 
 def test_read_point_geoms_from_atl08(atl08_test_filepath):
@@ -86,7 +86,7 @@ def test__read_points_for_gt(atl08_test_filepath):
 
 
 def test__read_points_for_gt_missing_raises_error(atl08_test_filepath):
-    with pytest.raises(IceSat2MissingDataError):
+    with pytest.raises(ICESat2MissingDataError):
         _read_points_for_gt(
             # We expect gt2l ground track to be missing from the test data.
             ground_track="gt2l",

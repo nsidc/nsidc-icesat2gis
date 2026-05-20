@@ -1,6 +1,6 @@
 """Copyright (c) 2026 Trey Stafford. All rights reserved.
 
-icesat2gis: Code for converting IceSat2 (ATL08) .h5 data into GIS-compatible points
+icesat2gis: Code for converting ICESat2 (ATL08) .h5 data into GIS-compatible points
 and polylines.
 """
 
