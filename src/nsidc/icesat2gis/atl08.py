@@ -77,6 +77,9 @@ def _read_points_for_gt(
         crs="EPSG:4326",
     )
 
+    # Drop points that are all-NaN for the user's selected variables.
+    gdf = gdf.dropna(subset=variables.keys(), how="all")
+
     # Localize the timestamp to UTC. Otherwise it inherits the system TZ
     # (e.g., MST).
     gdf["delta_time"] = gdf.delta_time.dt.tz_localize("UTC")
