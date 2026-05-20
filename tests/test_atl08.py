@@ -108,3 +108,21 @@ def test__read_points_for_gt_bad_variables_to_check_all_null(atl08_test_filepath
             variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
             variables_to_check_all_null=["foo"],
         )
+
+
+def test__read_points_for_gt_filters_data(atl08_test_filepath):
+    points_gdf_no_filter = _read_points_for_gt(
+        ground_track="gt1l",
+        filepath=atl08_test_filepath,
+        variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
+        variables_to_check_all_null=[],
+    )
+
+    points_gdf_with_filter = _read_points_for_gt(
+        ground_track="gt1l",
+        filepath=atl08_test_filepath,
+        variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
+        variables_to_check_all_null=ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
+    )
+
+    assert len(points_gdf_with_filter) < len(points_gdf_no_filter)

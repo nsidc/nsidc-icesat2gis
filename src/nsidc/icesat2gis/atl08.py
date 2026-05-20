@@ -104,13 +104,14 @@ def _read_points_for_gt(
     )
 
     # Drop points that are all-NaN for the user's selected variables.
-    variables_to_check_all_null_names = [
-        var.rsplit("/", maxsplit=1)[-1] for var in variables_to_check_all_null
-    ]
-    gdf = gdf.dropna(
-        subset=variables_to_check_all_null_names,
-        how="all",
-    )
+    if variables_to_check_all_null:
+        variables_to_check_all_null_names = [
+            var.rsplit("/", maxsplit=1)[-1] for var in variables_to_check_all_null
+        ]
+        gdf = gdf.dropna(
+            subset=variables_to_check_all_null_names,
+            how="all",
+        ).reset_index()
 
     # Localize the timestamp to UTC. Otherwise it inherits the system TZ
     # (e.g., MST).
