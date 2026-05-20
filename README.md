@@ -2,15 +2,15 @@
   <img alt="NSIDC logo" src="https://nsidc.org/themes/custom/nsidc/logo.svg" width="150" />
 </p>
 
-# IceSat 2 to GIS conversion utilities
+# ICESat-2 to GIS conversion utilities
 
 <!-- prettier-ignore -->
 > [!WARNING]
 > This repository is in early phases of development and currently focuses on
-> ATL08. The intention is to generalize for other IceSat2 products in the
+> ATL08. The intention is to generalize for other ICESat-2 products in the
 > future.
 
-Code for converting IceSat2 (ATL08) .h5 data into GIS-compatible points and
+Code for converting ICESat-2 (ATL08) .h5 data into GIS-compatible points and
 polylines.
 
 ## Installation
