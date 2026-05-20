@@ -1,4 +1,4 @@
-# v0.3.0 (TBD)
+# v0.3.0 (2025-05-20)
 
 - Handle missing ground track data gracefully. Raise an
   `ICESat2MissingDataError` when no data exists in a granule at all.
