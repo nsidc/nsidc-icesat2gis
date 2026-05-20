@@ -51,6 +51,9 @@ Homepage = "https://github.com/nsidc/nsidc-icesat2gis"
 Discussions = "https://github.com/nsidc/nsidc-icesat2gis/discussions"
 Changelog = "https://github.com/nsidc/nsidc-icesat2gis/releases"
 
+[project.scripts]
+nsidc-icesat2gis = "nsidc.icesat2gis.cli:cli"
+
 [dependency-groups]
 test = [
   "pytest >=9",
