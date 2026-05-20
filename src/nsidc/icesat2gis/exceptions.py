@@ -6,7 +6,7 @@ class IceSat2GISError(Exception):
     """
 
 
-class IceSatMissingDataError(IceSat2GISError):
+class IceSat2MissingDataError(IceSat2GISError):
     """Raised when there expected data is missing from an IceSat granule.
 
     This is often expected. E.g., ATL08 produces empty granules even when there

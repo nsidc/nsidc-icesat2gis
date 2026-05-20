@@ -10,7 +10,7 @@ from pyproj import Geod
 from shapely import LineString, Point
 from shapely.geometry import MultiLineString
 
-from nsidc.icesat2gis.exceptions import IceSatMissingDataError
+from nsidc.icesat2gis.exceptions import IceSat2MissingDataError
 
 GroundTrack = Literal["gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"]
 
@@ -44,7 +44,7 @@ def _read_points_for_gt(
 ) -> gpd.GeoDataFrame:
     """Reads 100m segment points from ATL08 for the given ground track.
 
-    Raises an `IceSatMissingDataError` when a ground track is missing data
+    Raises an `IceSat2MissingDataError` when a ground track is missing data
     (either the ground track group or the ground track's `land_segments` group
     is missing).
 
@@ -77,7 +77,7 @@ def _read_points_for_gt(
         # `land_segments` group is missing.
         msg = f"No `land_segment` data for {ground_track} from {filepath}: {e}"
         print(msg)
-        raise IceSatMissingDataError(msg) from e
+        raise IceSat2MissingDataError(msg) from e
 
     # Extract variables
     lats = ds.latitude
@@ -138,12 +138,12 @@ def read_points_from_atl08(
                 variables_to_check_all_null=gt_variables_to_check_all_null,
             )
             gdfs.append(gdf)
-        except IceSatMissingDataError:
+        except IceSat2MissingDataError:
             continue
 
     if not gdfs:
         msg = f"Found no valid ground track data for {filepath}"
-        raise IceSatMissingDataError(msg)
+        raise IceSat2MissingDataError(msg)
 
     combined_gdf = pd.concat(gdfs)
     combined_gdf.attrs["source_filename"] = filepath.name
