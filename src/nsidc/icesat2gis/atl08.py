@@ -29,19 +29,43 @@ ATL08_DEFAULT_GT_CORE_VARS = (
     "terrain/terrain_slope",
 )
 
+ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL = (
+    "canopy/h_canopy",
+    "terrain/h_te_best_fit",
+)
+
 
 def _read_points_for_gt(
     *,
     ground_track: GroundTrack,
     filepath: Path,
     variables_to_include: Sequence[str],
+    variables_to_check_all_null: Sequence[str],
 ) -> gpd.GeoDataFrame:
     """Reads 100m segment points from ATL08 for the given ground track.
 
     Raises an `IceSatMissingDataError` when a ground track is missing data
     (either the ground track group or the ground track's `land_segments` group
     is missing).
+
+    * `ground_track`: one of "gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"
+    * `filepath`: filepath to the ATL08 granule
+    * `variables_to_include`: sequence of strings representing GT variables to
+      include in the output (e.g,. `"canopy/h_canopy"`).
+    * `variables_to_check_all_null`: sequence of strings representing GT
+      variables to check for Null values. If all of the variables specified in
+      this sequence are Null for a record, that record is excluded.
     """
+    if not all(
+        var_to_check in variables_to_include
+        for var_to_check in variables_to_check_all_null
+    ):
+        msg = (
+            f"All `variables_to_check_all_null` must be in `variables_to_include`."
+            f"Got {variables_to_include=} {variables_to_check_all_null=}."
+        )
+        raise ValueError(msg)
+
     try:
         ds = xr.open_datatree(
             filepath,
@@ -80,7 +104,13 @@ def _read_points_for_gt(
     )
 
     # Drop points that are all-NaN for the user's selected variables.
-    gdf = gdf.dropna(subset=variables.keys(), how="all")
+    variables_to_check_all_null_names = [
+        var.rsplit("/", maxsplit=1)[-1] for var in variables_to_check_all_null
+    ]
+    gdf = gdf.dropna(
+        subset=variables_to_check_all_null_names,
+        how="all",
+    )
 
     # Localize the timestamp to UTC. Otherwise it inherits the system TZ
     # (e.g., MST).
@@ -93,6 +123,9 @@ def read_points_from_atl08(
     *,
     filepath: Path,
     gt_variables_to_include: Sequence[str] = ATL08_DEFAULT_GT_CORE_VARS,
+    gt_variables_to_check_all_null: Sequence[
+        str
+    ] = ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
 ) -> gpd.GeoDataFrame:
     """Return a GeoDataFrame containing points representing ground tracks."""
     gdfs = []
@@ -102,6 +135,7 @@ def read_points_from_atl08(
                 ground_track=ground_track,
                 filepath=filepath,
                 variables_to_include=gt_variables_to_include,
+                variables_to_check_all_null=gt_variables_to_check_all_null,
             )
             gdfs.append(gdf)
         except IceSatMissingDataError:
