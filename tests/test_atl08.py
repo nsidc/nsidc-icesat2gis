@@ -3,12 +3,13 @@ import pytest
 
 from nsidc.icesat2gis.atl08 import (
     ATL08_DEFAULT_GT_CORE_VARS,
+    ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
     _linestring_for_isolated_point,
     _read_points_for_gt,
     lines_from_atl08_points,
     read_points_from_atl08,
 )
-from nsidc.icesat2gis.exceptions import IceSatMissingDataError
+from nsidc.icesat2gis.exceptions import IceSat2MissingDataError
 
 
 def test_read_point_geoms_from_atl08(atl08_test_filepath):
@@ -77,6 +78,7 @@ def test__read_points_for_gt(atl08_test_filepath):
         ground_track="gt1l",
         filepath=atl08_test_filepath,
         variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
+        variables_to_check_all_null=ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
     )
 
     assert points_gdf is not None
@@ -84,10 +86,43 @@ def test__read_points_for_gt(atl08_test_filepath):
 
 
 def test__read_points_for_gt_missing_raises_error(atl08_test_filepath):
-    with pytest.raises(IceSatMissingDataError):
+    with pytest.raises(IceSat2MissingDataError):
         _read_points_for_gt(
             # We expect gt2l ground track to be missing from the test data.
             ground_track="gt2l",
             filepath=atl08_test_filepath,
             variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
+            variables_to_check_all_null=ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
         )
+
+
+def test__read_points_for_gt_bad_variables_to_check_all_null(atl08_test_filepath):
+    with pytest.raises(
+        ValueError,
+        match="All `variables_to_check_all_null` must be in `variables_to_include`",
+    ):
+        _read_points_for_gt(
+            # We expect gt2l ground track to be missing from the test data.
+            ground_track="gt2l",
+            filepath=atl08_test_filepath,
+            variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
+            variables_to_check_all_null=["foo"],
+        )
+
+
+def test__read_points_for_gt_filters_data(atl08_test_filepath):
+    points_gdf_no_filter = _read_points_for_gt(
+        ground_track="gt1l",
+        filepath=atl08_test_filepath,
+        variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
+        variables_to_check_all_null=[],
+    )
+
+    points_gdf_with_filter = _read_points_for_gt(
+        ground_track="gt1l",
+        filepath=atl08_test_filepath,
+        variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
+        variables_to_check_all_null=ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
+    )
+
+    assert len(points_gdf_with_filter) < len(points_gdf_no_filter)

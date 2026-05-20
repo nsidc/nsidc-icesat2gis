@@ -7,9 +7,13 @@ NOTE: This script relies on the assumption that the user has downloaded
 from collections import defaultdict
 from pathlib import Path
 
+import numpy as np
 import xarray as xr
 
-from nsidc.icesat2gis.atl08 import ATL08_DEFAULT_GT_CORE_VARS
+from nsidc.icesat2gis.atl08 import (
+    ATL08_DEFAULT_GT_CORE_VARS,
+    ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
+)
 
 TEST_DIR = Path(__file__).parent / ".." / "tests"
 
@@ -36,7 +40,6 @@ if __name__ == "__main__":
         ds = xr.open_datatree(
             SOURCE_DATA_PATH,
             group=f"{ground_track}/land_segments/",
-            chunks={},
         )
         lats = ds.latitude
         filtered_lats = xr.concat(
@@ -69,7 +72,7 @@ if __name__ == "__main__":
         for var_path in ATL08_DEFAULT_GT_CORE_VARS:
             group_name, var_name = var_path.split("/")
             data_var = ds[var_path]
-            variables[group_name][var_name] = xr.concat(
+            subset_data = xr.concat(
                 [
                     # First 50 observations
                     data_var.isel(delta_time=slice(0, 50)),
@@ -81,6 +84,11 @@ if __name__ == "__main__":
                 dim="delta_time",
                 coords="minimal",
             )
+            if var_path in ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL:
+                # set the first 5 records to all-null to test filtering
+                subset_data[0:5] = np.nan
+
+            variables[group_name][var_name] = subset_data
 
         test_ds = xr.DataTree.from_dict(
             {
