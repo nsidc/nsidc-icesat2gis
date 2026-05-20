@@ -124,7 +124,7 @@ def lines_in_dir(
     gap_threshold_meters: int,
     simplify_line_tolerance: None | float,
 ) -> None:
-
+    """Produce parquet files containing ATL08 lines for all of the ATL08 .h5 files in a directory."""
     for input_filepath in input_dir.glob("*.h5"):
         print(f"processing {input_filepath}")
         try:

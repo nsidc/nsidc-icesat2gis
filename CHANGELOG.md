@@ -11,6 +11,7 @@
   `read_points_from_atl08`
 - Drop points where, by default, `canopy/h_canopy` and `terrain/h_te_best_fit`
   are null.
+- Add CLI to project scripts (`nsidc-icesat2gis`)
 
 # v0.2.0 (2026-05-08)
 
