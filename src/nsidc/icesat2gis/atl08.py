@@ -10,7 +10,7 @@ from pyproj import Geod
 from shapely import LineString, Point
 from shapely.geometry import MultiLineString
 
-from nsidc.icesat2gis.exceptions import IceSat2MissingDataError
+from nsidc.icesat2gis.exceptions import ICESat2MissingDataError
 
 GroundTrack = Literal["gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"]
 
@@ -44,7 +44,7 @@ def _read_points_for_gt(
 ) -> gpd.GeoDataFrame:
     """Reads 100m segment points from ATL08 for the given ground track.
 
-    Raises an `IceSat2MissingDataError` when a ground track is missing data
+    Raises an `ICESat2MissingDataError` when a ground track is missing data
     (either the ground track group or the ground track's `land_segments` group
     is missing).
 
@@ -77,7 +77,7 @@ def _read_points_for_gt(
         # `land_segments` group is missing.
         msg = f"No `land_segment` data for {ground_track} from {filepath}: {e}"
         print(msg)
-        raise IceSat2MissingDataError(msg) from e
+        raise ICESat2MissingDataError(msg) from e
 
     # Extract variables
     lats = ds.latitude
@@ -139,12 +139,12 @@ def read_points_from_atl08(
                 variables_to_check_all_null=gt_variables_to_check_all_null,
             )
             gdfs.append(gdf)
-        except IceSat2MissingDataError:
+        except ICESat2MissingDataError:
             continue
 
     if not gdfs:
         msg = f"Found no valid ground track data for {filepath}"
-        raise IceSat2MissingDataError(msg)
+        raise ICESat2MissingDataError(msg)
 
     combined_gdf = pd.concat(gdfs)
     combined_gdf.attrs["source_filename"] = filepath.name
@@ -216,7 +216,7 @@ def lines_from_atl08_points(
     *,
     points: gpd.GeoDataFrame,
     gap_threshold_meters: int = 500,
-    isolated_point_line_meters: int = 17,  # 17m is the approx. ground spot size of IceSat2.
+    isolated_point_line_meters: int = 17,  # 17m is the approx. ground spot size of ICESat2.
     simplify_line_tolerance: None | float = None,
 ) -> gpd.GeoDataFrame:
     """Return a GeoDataFrame containing linestrings representing ground tracks.
@@ -230,7 +230,7 @@ def lines_from_atl08_points(
     areas are more obvious.
 
     NOTE: Single isolated points are represented by a line 17m in length (which
-    is the approx. ground spot size of IceSat2). The isolated point lies at the
+    is the approx. ground spot size of ICESat2). The isolated point lies at the
     center of the line, and endpoints are projected out from it (8.5m in each
     direction). We do this so that single points can be represented without
     needing to mix geometry types (which is usually not possible in a single GIS
@@ -319,7 +319,7 @@ def read_lines_from_atl08(
     *,
     filepath: Path,
     gap_threshold_meters: int = 500,
-    isolated_point_line_meters: int = 17,  # 17m is the approx. ground spot size of IceSat2.
+    isolated_point_line_meters: int = 17,  # 17m is the approx. ground spot size of ICESat2.
     simplify_line_tolerance: None | float = None,
 ) -> gpd.GeoDataFrame:
     points = read_points_from_atl08(filepath=filepath)
