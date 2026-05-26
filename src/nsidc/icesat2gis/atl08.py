@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal, cast, get_args
 
+import earthaccess
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -38,7 +39,7 @@ ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL = (
 def _read_points_for_gt(
     *,
     ground_track: GroundTrack,
-    filepath: Path,
+    filepath: Path | earthaccess.store.EarthAccessFile,
     variables_to_include: Sequence[str],
     variables_to_check_all_null: Sequence[str],
 ) -> gpd.GeoDataFrame:
@@ -89,12 +90,18 @@ def _read_points_for_gt(
         var_name = var_path.rsplit("/", maxsplit=1)[-1]
         variables[var_name] = ds[var_path]
 
+    if isinstance(filepath, Path):
+        filename = filepath.name
+    else:
+        # This is an EarthAccessFile
+        filename = Path(filepath.path).name
+
     # Construct gdf
     gdf = gpd.GeoDataFrame(
         data={
             # Reference info
             "ground_track": [ground_track] * len(lons),
-            "source_filename": [filepath.name] * len(lons),
+            "source_filename": [filename] * len(lons),
             "delta_time": delta_time,
             # User-provided variables
             **variables,
@@ -122,7 +129,7 @@ def _read_points_for_gt(
 
 def read_points_from_atl08(
     *,
-    filepath: Path,
+    filepath: Path | earthaccess.store.EarthAccessFile,
     gt_variables_to_include: Sequence[str] = ATL08_DEFAULT_GT_CORE_VARS,
     gt_variables_to_check_all_null: Sequence[
         str
@@ -146,8 +153,14 @@ def read_points_from_atl08(
         msg = f"Found no valid ground track data for {filepath}"
         raise ICESat2MissingDataError(msg)
 
+    if isinstance(filepath, Path):
+        filename = filepath.name
+    else:
+        # This is an EarthAccessFile
+        filename = Path(filepath.path).name
+
     combined_gdf = pd.concat(gdfs)
-    combined_gdf.attrs["source_filename"] = filepath.name
+    combined_gdf.attrs["source_filename"] = filename
     combined_gdf = cast("gpd.GeoDataFrame", combined_gdf)
 
     return combined_gdf
@@ -317,7 +330,7 @@ def lines_from_atl08_points(
 
 def read_lines_from_atl08(
     *,
-    filepath: Path,
+    filepath: Path | earthaccess.store.EarthAccessFile,
     gap_threshold_meters: int = 500,
     isolated_point_line_meters: int = 17,  # 17m is the approx. ground spot size of ICESat2.
     simplify_line_tolerance: None | float = None,

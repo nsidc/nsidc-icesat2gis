@@ -1,4 +1,8 @@
-# v0.3.0 (2025-05-20)
+# v0.4.0 (TBD)
+
+- Support earthaccess workflow.
+
+# v0.3.0 (2026-05-20)
 
 - Handle missing ground track data gracefully. Raise an
   `ICESat2MissingDataError` when no data exists in a granule at all.
