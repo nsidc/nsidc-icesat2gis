@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import Literal, cast, get_args
 
@@ -118,7 +118,7 @@ def _read_points_for_gt(
         gdf = gdf.dropna(
             subset=variables_to_check_all_null_names,
             how="all",
-        ).reset_index()
+        ).reset_index(drop=True)
 
     # Localize the timestamp to UTC. Otherwise it inherits the system TZ
     # (e.g., MST).
@@ -164,6 +164,24 @@ def read_points_from_atl08(
     combined_gdf = cast("gpd.GeoDataFrame", combined_gdf)
 
     return combined_gdf
+
+
+def get_atl08_points(**search_kwargs) -> Iterator[gpd.GeoDataFrame]:
+    """Use `earthaccess` to find matching granules and return as points gdfs.
+
+    Requires earthdata login credentials.
+
+    Yields one geodataframe per matching granule.
+    """
+    earthaccess.login()
+    results = earthaccess.search_data(short_name="ATL08", **search_kwargs)
+
+    print(f"Found {len(results)} granules")
+
+    for result in results:
+        ea_files = earthaccess.open([result])
+        points = read_points_from_atl08(filepath=ea_files[0])
+        yield points
 
 
 def _linestring_for_isolated_point(

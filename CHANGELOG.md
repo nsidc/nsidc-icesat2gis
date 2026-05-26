@@ -1,6 +1,11 @@
 # v0.4.0 (TBD)
 
-- Support earthaccess workflow.
+- Support earthaccess workflow:
+  - Add support for passing an `earthaccess.store.EarthAccessFile` (from
+    `earthaccess.open`) in place of a local filepath.
+  - Add `get_atl08_points` that searches for matching granules via earthacces
+    and iterates through them, yielding GeoDataFrames of points for each
+    granule.
 
 # v0.3.0 (2026-05-20)
 
