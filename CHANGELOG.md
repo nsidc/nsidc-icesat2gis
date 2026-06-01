@@ -1,4 +1,4 @@
-# v0.4.0 (TBD)
+# v0.4.0 (2026-06-01)
 
 - Support earthaccess workflow:
   - Add support for passing an `earthaccess.store.EarthAccessFile` (from
