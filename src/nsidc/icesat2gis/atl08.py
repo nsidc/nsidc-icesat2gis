@@ -1,7 +1,8 @@
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import Literal, cast, get_args
 
+import earthaccess
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -38,7 +39,7 @@ ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL = (
 def _read_points_for_gt(
     *,
     ground_track: GroundTrack,
-    filepath: Path,
+    filepath: Path | earthaccess.store.EarthAccessFile,
     variables_to_include: Sequence[str],
     variables_to_check_all_null: Sequence[str],
 ) -> gpd.GeoDataFrame:
@@ -89,12 +90,18 @@ def _read_points_for_gt(
         var_name = var_path.rsplit("/", maxsplit=1)[-1]
         variables[var_name] = ds[var_path]
 
+    if isinstance(filepath, Path):
+        filename = filepath.name
+    else:
+        # This is an EarthAccessFile
+        filename = Path(filepath.path).name
+
     # Construct gdf
     gdf = gpd.GeoDataFrame(
         data={
             # Reference info
             "ground_track": [ground_track] * len(lons),
-            "source_filename": [filepath.name] * len(lons),
+            "source_filename": [filename] * len(lons),
             "delta_time": delta_time,
             # User-provided variables
             **variables,
@@ -111,7 +118,7 @@ def _read_points_for_gt(
         gdf = gdf.dropna(
             subset=variables_to_check_all_null_names,
             how="all",
-        ).reset_index()
+        ).reset_index(drop=True)
 
     # Localize the timestamp to UTC. Otherwise it inherits the system TZ
     # (e.g., MST).
@@ -122,7 +129,7 @@ def _read_points_for_gt(
 
 def read_points_from_atl08(
     *,
-    filepath: Path,
+    filepath: Path | earthaccess.store.EarthAccessFile,
     gt_variables_to_include: Sequence[str] = ATL08_DEFAULT_GT_CORE_VARS,
     gt_variables_to_check_all_null: Sequence[
         str
@@ -146,11 +153,35 @@ def read_points_from_atl08(
         msg = f"Found no valid ground track data for {filepath}"
         raise ICESat2MissingDataError(msg)
 
+    if isinstance(filepath, Path):
+        filename = filepath.name
+    else:
+        # This is an EarthAccessFile
+        filename = Path(filepath.path).name
+
     combined_gdf = pd.concat(gdfs)
-    combined_gdf.attrs["source_filename"] = filepath.name
+    combined_gdf.attrs["source_filename"] = filename
     combined_gdf = cast("gpd.GeoDataFrame", combined_gdf)
 
     return combined_gdf
+
+
+def get_atl08_points(**search_kwargs) -> Iterator[gpd.GeoDataFrame]:
+    """Use `earthaccess` to find matching granules and return as points gdfs.
+
+    Requires earthdata login credentials.
+
+    Yields one geodataframe per matching granule.
+    """
+    earthaccess.login()
+    results = earthaccess.search_data(short_name="ATL08", **search_kwargs)
+
+    print(f"Found {len(results)} granules")
+
+    for result in results:
+        ea_files = earthaccess.open([result])
+        points = read_points_from_atl08(filepath=ea_files[0])
+        yield points
 
 
 def _linestring_for_isolated_point(
@@ -317,7 +348,7 @@ def lines_from_atl08_points(
 
 def read_lines_from_atl08(
     *,
-    filepath: Path,
+    filepath: Path | earthaccess.store.EarthAccessFile,
     gap_threshold_meters: int = 500,
     isolated_point_line_meters: int = 17,  # 17m is the approx. ground spot size of ICESat2.
     simplify_line_tolerance: None | float = None,
