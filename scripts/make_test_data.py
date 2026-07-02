@@ -34,14 +34,27 @@ if __name__ == "__main__":
     # Remove the existing test data file if it already exists.
     test_data_filepath.unlink(missing_ok=True)
 
+    ds = xr.open_datatree(
+        SOURCE_DATA_PATH,
+    )
+
+    # Include orbit information
+    test_ds = xr.DataTree.from_dict(
+        {"orbit_info": ds.orbit_info},
+        nested=True,
+    )
+
+    test_ds.to_netcdf(
+        test_data_filepath,
+        mode="a",
+    )
+
+    # Include variables from land_segments of individual ground tracks/beams.
     # Note: "gt2l" is intentionally missing to test cases where one or more
     # ground tracks have no data.
     for ground_track in ("gt1l", "gt1r", "gt2r", "gt3l", "gt3r"):
-        ds = xr.open_datatree(
-            SOURCE_DATA_PATH,
-            group=f"{ground_track}/land_segments/",
-        )
-        lats = ds.latitude
+        land_seg_ds = ds[f"{ground_track}/land_segments/"]
+        lats = land_seg_ds.latitude
         filtered_lats = xr.concat(
             [
                 # First 50 observations
@@ -54,7 +67,7 @@ if __name__ == "__main__":
             dim="delta_time",
             coords="minimal",
         )
-        lons = ds.longitude
+        lons = land_seg_ds.longitude
         filtered_lons = xr.concat(
             [
                 # First 50 observations
@@ -71,7 +84,7 @@ if __name__ == "__main__":
         variables = defaultdict(dict)
         for var_path in ATL08_DEFAULT_GT_CORE_VARS:
             group_name, var_name = var_path.split("/")
-            data_var = ds[var_path]
+            data_var = land_seg_ds[var_path]
             subset_data = xr.concat(
                 [
                     # First 50 observations

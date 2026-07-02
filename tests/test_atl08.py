@@ -1,5 +1,6 @@
 import pyproj
 import pytest
+import xarray as xr
 
 from nsidc.icesat2gis.atl08 import (
     ATL08_DEFAULT_GT_CORE_VARS,
@@ -25,6 +26,10 @@ def test_read_point_geoms_from_atl08(atl08_test_filepath):
         var_path.rsplit("/", maxsplit=1)[-1] for var_path in ATL08_DEFAULT_GT_CORE_VARS
     ]:
         assert points[core_var] is not None
+
+    assert len(set(points["bm_strength"])) == 2
+    assert "weak" in set(points["bm_strength"])
+    assert "strong" in set(points["bm_strength"])
 
 
 def test_lines_from_atl08_points(atl08_test_filepath):
@@ -75,9 +80,11 @@ def test__linestring_for_isolated_point(atl08_test_filepath):
 
 
 def test__read_points_for_gt(atl08_test_filepath):
+    ds = xr.open_datatree(atl08_test_filepath)
     points_gdf = _read_points_for_gt(
         ground_track="gt1l",
-        filepath=atl08_test_filepath,
+        filename=atl08_test_filepath.name,
+        ds=ds,
         variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
         variables_to_check_all_null=ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
     )
@@ -87,17 +94,20 @@ def test__read_points_for_gt(atl08_test_filepath):
 
 
 def test__read_points_for_gt_missing_raises_error(atl08_test_filepath):
+    ds = xr.open_datatree(atl08_test_filepath)
     with pytest.raises(ICESat2MissingDataError):
         _read_points_for_gt(
             # We expect gt2l ground track to be missing from the test data.
             ground_track="gt2l",
-            filepath=atl08_test_filepath,
+            ds=ds,
+            filename=atl08_test_filepath.name,
             variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
             variables_to_check_all_null=ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
         )
 
 
 def test__read_points_for_gt_bad_variables_to_check_all_null(atl08_test_filepath):
+    ds = xr.open_datatree(atl08_test_filepath)
     with pytest.raises(
         ValueError,
         match="All `variables_to_check_all_null` must be in `variables_to_include`",
@@ -105,23 +115,27 @@ def test__read_points_for_gt_bad_variables_to_check_all_null(atl08_test_filepath
         _read_points_for_gt(
             # We expect gt2l ground track to be missing from the test data.
             ground_track="gt2l",
-            filepath=atl08_test_filepath,
+            filename=atl08_test_filepath.name,
+            ds=ds,
             variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
             variables_to_check_all_null=["foo"],
         )
 
 
 def test__read_points_for_gt_filters_data(atl08_test_filepath):
+    ds = xr.open_datatree(atl08_test_filepath)
     points_gdf_no_filter = _read_points_for_gt(
         ground_track="gt1l",
-        filepath=atl08_test_filepath,
+        filename=atl08_test_filepath.name,
+        ds=ds,
         variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
         variables_to_check_all_null=[],
     )
 
     points_gdf_with_filter = _read_points_for_gt(
         ground_track="gt1l",
-        filepath=atl08_test_filepath,
+        filename=atl08_test_filepath.name,
+        ds=ds,
         variables_to_include=ATL08_DEFAULT_GT_CORE_VARS,
         variables_to_check_all_null=ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
     )

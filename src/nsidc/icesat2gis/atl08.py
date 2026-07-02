@@ -37,7 +37,9 @@ ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL = (
 
 
 def _beam_strength_from_orientation(
-    *, ground_track: GroundTrack, orientation: int
+    *,
+    ground_track: GroundTrack,
+    orientation: int,
 ) -> str:
     """Return 'weak' or 'strong' depending on the ground track and spacecraft orientation.
 
@@ -83,7 +85,8 @@ def _beam_strength_from_orientation(
 def _read_points_for_gt(
     *,
     ground_track: GroundTrack,
-    filepath: Path | earthaccess.store.EarthAccessFile,
+    ds: xr.DataTree,
+    filename: str,
     variables_to_include: Sequence[str],
     variables_to_check_all_null: Sequence[str],
 ) -> gpd.GeoDataFrame:
@@ -111,34 +114,38 @@ def _read_points_for_gt(
         )
         raise ValueError(msg)
 
-    try:
-        ds = xr.open_datatree(
-            filepath,
-            group=f"{ground_track}/land_segments/",
-            chunks={},
+    if len(ds["orbit_info/sc_orient"]) != 1:
+        msg = (
+            "Expected granule to contain single `sc_orient`."
+            f" Got {len(ds['orbit_info/sc_orient'])}"
         )
-    except (OSError, KeyError) as e:
+        raise ICESat2GISError(msg)
+
+    try:
+        land_seg_group = ds[f"{ground_track}/land_segments/"]
+    except KeyError as e:
         # This could be because the ground track group is missing, or the
         # `land_segments` group is missing.
-        msg = f"No `land_segment` data for {ground_track} from {filepath}: {e}"
+        msg = f"No `land_segment` data for {ground_track} from {filename}: {e}"
         print(msg)
         raise ICESat2MissingDataError(msg) from e
 
     # Extract variables
-    lats = ds.latitude
-    lons = ds.longitude
-    delta_time = ds.delta_time
+    lats = land_seg_group.latitude
+    lons = land_seg_group.longitude
+    delta_time = land_seg_group.delta_time
 
     variables = {}
     for var_path in variables_to_include:
         var_name = var_path.rsplit("/", maxsplit=1)[-1]
-        variables[var_name] = ds[var_path]
+        variables[var_name] = land_seg_group[var_path]
 
-    if isinstance(filepath, Path):
-        filename = filepath.name
-    else:
-        # This is an EarthAccessFile
-        filename = Path(filepath.path).name
+    # Get the beam strength
+    sc_orientation = int(ds["orbit_info/sc_orient"][0])
+    beam_strength = _beam_strength_from_orientation(
+        ground_track=ground_track,
+        orientation=sc_orientation,
+    )
 
     # Construct gdf
     gdf = gpd.GeoDataFrame(
@@ -146,6 +153,7 @@ def _read_points_for_gt(
             # Reference info
             "ground_track": [ground_track] * len(lons),
             "source_filename": [filename] * len(lons),
+            "bm_strength": [beam_strength] * len(lons),
             "delta_time": delta_time,
             # User-provided variables
             **variables,
@@ -180,12 +188,26 @@ def read_points_from_atl08(
     ] = ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
 ) -> gpd.GeoDataFrame:
     """Return a GeoDataFrame containing points representing ground tracks."""
+    ds = xr.open_datatree(
+        filepath,
+        chunks={},
+    )
+
+    # TODO: can we get filename from
+    # ds.encoding['source']?
+    if isinstance(filepath, Path):
+        filename = filepath.name
+    else:
+        # This is an EarthAccessFile
+        filename = Path(filepath.path).name
+
     gdfs = []
     for ground_track in get_args(GroundTrack):
         try:
             gdf = _read_points_for_gt(
                 ground_track=ground_track,
-                filepath=filepath,
+                filename=filename,
+                ds=ds,
                 variables_to_include=gt_variables_to_include,
                 variables_to_check_all_null=gt_variables_to_check_all_null,
             )
@@ -196,12 +218,6 @@ def read_points_from_atl08(
     if not gdfs:
         msg = f"Found no valid ground track data for {filepath}"
         raise ICESat2MissingDataError(msg)
-
-    if isinstance(filepath, Path):
-        filename = filepath.name
-    else:
-        # This is an EarthAccessFile
-        filename = Path(filepath.path).name
 
     combined_gdf = pd.concat(gdfs)
     combined_gdf.attrs["source_filename"] = filename
