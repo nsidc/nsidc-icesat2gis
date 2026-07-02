@@ -36,11 +36,14 @@ ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL = (
 )
 
 
+BeamStrength = Literal["weak", "strong"]
+
+
 def _beam_strength_from_orientation(
     *,
     ground_track: GroundTrack,
     orientation: int,
-) -> str:
+) -> BeamStrength:
     """Return 'weak' or 'strong' depending on the ground track and spacecraft orientation.
 
     Orientation can be found in the "orbit_info/sc_orient" variable and take a
@@ -54,7 +57,7 @@ def _beam_strength_from_orientation(
         msg = "Expected a spacecraft orientation value of 0 or 1. Got: {orientation=}"
         raise ICESat2GISError(msg)
 
-    orientation_mapping: dict[int, dict[GroundTrack, str]] = {
+    orientation_mapping: dict[int, dict[GroundTrack, BeamStrength]] = {
         # Backward config
         0: {
             "gt1l": "strong",
