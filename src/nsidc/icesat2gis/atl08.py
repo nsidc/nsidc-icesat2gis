@@ -191,13 +191,7 @@ def read_points_from_atl08(
         chunks={},
     )
 
-    # TODO: can we get filename from
-    # ds.encoding['source']?
-    if isinstance(filepath, Path):
-        filename = filepath.name
-    else:
-        # This is an EarthAccessFile
-        filename = Path(filepath.path).name
+    filename = Path(ds.encoding["source"]).name
 
     gdfs = []
     for ground_track in get_args(GroundTrack):
