@@ -1,3 +1,8 @@
+# v0.5.0 (TBD)
+
+- Add `bm_strength` field that indicates beam strength (weak or strong) for each
+  point.
+
 # v0.4.0 (2026-06-01)
 
 - Support earthaccess workflow:
