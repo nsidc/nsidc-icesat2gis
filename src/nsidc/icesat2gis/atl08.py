@@ -11,7 +11,7 @@ from pyproj import Geod
 from shapely import LineString, Point
 from shapely.geometry import MultiLineString
 
-from nsidc.icesat2gis.exceptions import ICESat2MissingDataError
+from nsidc.icesat2gis.exceptions import ICESat2GISError, ICESat2MissingDataError
 
 GroundTrack = Literal["gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"]
 
@@ -34,6 +34,50 @@ ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL = (
     "canopy/h_canopy",
     "terrain/h_te_best_fit",
 )
+
+
+def _beam_strength_from_orientation(
+    *, ground_track: GroundTrack, orientation: int
+) -> str:
+    """Return 'weak' or 'strong' depending on the ground track and spacecraft orientation.
+
+    Orientation can be found in the "orbit_info/sc_orient" variable and take a
+    value of either 0, 1, or 2. A value of 0 indicates that the spacecraft is
+    flying in the "backwards" configuration. A value of 1 indicates that the
+    spacecraft is flying in the "forward" orientation, and a value of 2
+    indicates that the spacecraft is in transition. This function will raise an
+    error if a value of 2 is encountered.
+    """
+    if orientation not in (0, 1):
+        msg = "Expected a spacecraft orientation value of 0 or 1. Got: {orientation=}"
+        raise ICESat2GISError(msg)
+
+    # TODO: This mapping is clear, but could be replaced by logic checking if
+    # the beam is left or right and assigning strength based on that...
+    orientation_mapping: dict[int, dict[GroundTrack, str]] = {
+        # Backward config
+        0: {
+            "gt1l": "weak",
+            "gt1r": "strong",
+            "gt2l": "weak",
+            "gt2r": "strong",
+            "gt3l": "weak",
+            "gt3r": "strong",
+        },
+        # Forward config
+        1: {
+            "gt1l": "strong",
+            "gt1r": "weak",
+            "gt2l": "strong",
+            "gt2r": "weak",
+            "gt3l": "strong",
+            "gt3r": "weak",
+        },
+    }
+
+    beam_strength = orientation_mapping[orientation][ground_track]
+
+    return beam_strength
 
 
 def _read_points_for_gt(
@@ -176,7 +220,7 @@ def get_atl08_points(**search_kwargs) -> Iterator[gpd.GeoDataFrame]:
     earthaccess.login()
     results = earthaccess.search_data(short_name="ATL08", **search_kwargs)
 
-    print(f"Found {len(results)} granules")
+    print(f"Found {len(results)} granules with {search_kwargs=}")
 
     for result in results:
         ea_files = earthaccess.open([result])

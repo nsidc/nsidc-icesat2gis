@@ -4,6 +4,7 @@ import pytest
 from nsidc.icesat2gis.atl08 import (
     ATL08_DEFAULT_GT_CORE_VARS,
     ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
+    _beam_strength_from_orientation,
     _linestring_for_isolated_point,
     _read_points_for_gt,
     lines_from_atl08_points,
@@ -126,3 +127,15 @@ def test__read_points_for_gt_filters_data(atl08_test_filepath):
     )
 
     assert len(points_gdf_with_filter) < len(points_gdf_no_filter)
+
+
+def test__beam_strength_from_orientation():
+    assert _beam_strength_from_orientation(ground_track="gt1l", orientation=0) == "weak"
+    assert (
+        _beam_strength_from_orientation(ground_track="gt1r", orientation=0) == "strong"
+    )
+
+    assert (
+        _beam_strength_from_orientation(ground_track="gt1l", orientation=1) == "strong"
+    )
+    assert _beam_strength_from_orientation(ground_track="gt1r", orientation=1) == "weak"
