@@ -54,8 +54,6 @@ def _beam_strength_from_orientation(
         msg = "Expected a spacecraft orientation value of 0 or 1. Got: {orientation=}"
         raise ICESat2GISError(msg)
 
-    # TODO: This mapping is clear, but could be replaced by logic checking if
-    # the beam is left or right and assigning strength based on that...
     orientation_mapping: dict[int, dict[GroundTrack, str]] = {
         # Backward config
         0: {
