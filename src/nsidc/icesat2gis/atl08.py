@@ -59,21 +59,21 @@ def _beam_strength_from_orientation(
     orientation_mapping: dict[int, dict[GroundTrack, str]] = {
         # Backward config
         0: {
-            "gt1l": "weak",
-            "gt1r": "strong",
-            "gt2l": "weak",
-            "gt2r": "strong",
-            "gt3l": "weak",
-            "gt3r": "strong",
-        },
-        # Forward config
-        1: {
             "gt1l": "strong",
             "gt1r": "weak",
             "gt2l": "strong",
             "gt2r": "weak",
             "gt3l": "strong",
             "gt3r": "weak",
+        },
+        # Forward config
+        1: {
+            "gt1l": "weak",
+            "gt1r": "strong",
+            "gt2l": "weak",
+            "gt2r": "strong",
+            "gt3l": "weak",
+            "gt3r": "strong",
         },
     }
 

@@ -144,12 +144,14 @@ def test__read_points_for_gt_filters_data(atl08_test_filepath):
 
 
 def test__beam_strength_from_orientation():
-    assert _beam_strength_from_orientation(ground_track="gt1l", orientation=0) == "weak"
+    # Forward
+    assert _beam_strength_from_orientation(ground_track="gt1l", orientation=1) == "weak"
     assert (
-        _beam_strength_from_orientation(ground_track="gt1r", orientation=0) == "strong"
+        _beam_strength_from_orientation(ground_track="gt1r", orientation=1) == "strong"
     )
 
+    # Backward
     assert (
-        _beam_strength_from_orientation(ground_track="gt1l", orientation=1) == "strong"
+        _beam_strength_from_orientation(ground_track="gt1l", orientation=0) == "strong"
     )
-    assert _beam_strength_from_orientation(ground_track="gt1r", orientation=1) == "weak"
+    assert _beam_strength_from_orientation(ground_track="gt1r", orientation=0) == "weak"
