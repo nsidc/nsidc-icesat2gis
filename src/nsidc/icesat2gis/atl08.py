@@ -18,16 +18,28 @@ GroundTrack = Literal["gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"]
 
 # Default ground_track core variables for ATL08.
 ATL08_DEFAULT_GT_CORE_VARS = (
+    # Canopy variables
     "canopy/h_canopy",
-    "canopy/h_mean_canopy",
     "canopy/h_canopy_uncertainty",
+    "canopy/h_min_canopy",
+    "canopy/h_max_canopy",
     "canopy/h_median_canopy",
+    "canopy/h_mean_canopy",
+    "canopy/h_canopy_abs",
+    "canopy/h_median_canopy_abs",
+    "canopy/h_mean_canopy_abs",
+    "canopy/canopy_openness",
+    "canopy/h_dif_canopy",
     "canopy/photon_rate_can",
+    # Terrain variables
     "terrain/h_te_best_fit",
-    "terrain/h_te_mean",
     "terrain/h_te_uncertainty",
-    "terrain/photon_rate_te",
     "terrain/terrain_slope",
+    "terrain/h_te_min",
+    "terrain/h_te_max",
+    "terrain/h_te_median",
+    "terrain/h_te_mean",
+    "terrain/photon_rate_te",
 )
 
 ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL = (
