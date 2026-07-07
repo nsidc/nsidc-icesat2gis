@@ -26,11 +26,14 @@ ATL08_DEFAULT_GT_CORE_VARS = (
     "canopy/h_median_canopy",
     "canopy/h_mean_canopy",
     "canopy/h_canopy_abs",
+    "canopy/h_min_canopy_abs",
+    "canopy/h_max_canopy_abs",
     "canopy/h_median_canopy_abs",
     "canopy/h_mean_canopy_abs",
     "canopy/canopy_openness",
     "canopy/h_dif_canopy",
     "canopy/photon_rate_can",
+    "canopy/canopy_h_metrics",
     # Terrain variables
     "terrain/h_te_best_fit",
     "terrain/h_te_uncertainty",
@@ -40,6 +43,17 @@ ATL08_DEFAULT_GT_CORE_VARS = (
     "terrain/h_te_median",
     "terrain/h_te_mean",
     "terrain/photon_rate_te",
+    # Reference information
+    "solar_elevation",
+    "brightness_flag",
+    "urban_flag",
+    "rgt",
+    "layer_flag",
+    "msw_flag",
+    "dem_h",
+    # Lat/lon included separately as columns for easy queries.
+    "latitude",
+    "longitude",
 )
 
 ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL = (
@@ -151,7 +165,26 @@ def _read_points_for_gt(
     variables = {}
     for var_path in variables_to_include:
         var_name = var_path.rsplit("/", maxsplit=1)[-1]
-        variables[var_name] = land_seg_group[var_path]
+        variable = land_seg_group[var_path]
+        if "canopy_h_metrics" in var_name:
+            # Special case for canopy_h_metrics. This must be broken out into
+            # multiple columns.
+            # Create a list of values from 10-95 at increments of 5.
+            metrics_percents = list(range(10, 95 + 5, 5))
+            for metric_idx, h_can_metric in variable.groupby("ds_metrics"):
+                variables[f"{var_name}{metrics_percents[metric_idx - 1]}"] = (
+                    h_can_metric.to_numpy().squeeze()
+                )
+        elif "flag_meanings" in variable.attrs:
+            # Decode flag meanings
+            flag_meanings = variable.flag_meanings.split(" ")
+            flag_values = variable.flag_values
+            flag_mapping = dict(zip(flag_values, flag_meanings, strict=True))
+            decoded_values = [flag_mapping[val] for val in variable.to_numpy()]
+            variables[var_name] = decoded_values
+        else:
+            # Just use the variable as-is
+            variables[var_name] = variable
 
     # Get the beam strength
     sc_orientation = int(ds["orbit_info/sc_orient"][0])
@@ -160,6 +193,10 @@ def _read_points_for_gt(
         orientation=sc_orientation,
     )
 
+    # Get orbit characteristics
+    orbit_cycle_number = int(ds["orbit_info/cycle_number"][0])
+    orbit_number = int(ds["orbit_info/orbit_number"][0])
+
     # Construct gdf
     gdf = gpd.GeoDataFrame(
         data={
@@ -167,7 +204,11 @@ def _read_points_for_gt(
             "ground_track": [ground_track] * len(lons),
             "source_filename": [filename] * len(lons),
             "bm_strength": [beam_strength] * len(lons),
-            "delta_time": delta_time,
+            # rename to datetime, since this has been decoded to datetime
+            # objects.
+            "datetime": delta_time,
+            "cycle_number": [orbit_cycle_number] * len(lons),
+            "orbit_number": [orbit_number] * len(lons),
             # User-provided variables
             **variables,
         },
@@ -187,7 +228,7 @@ def _read_points_for_gt(
 
     # Localize the timestamp to UTC. Otherwise it inherits the system TZ
     # (e.g., MST).
-    gdf["delta_time"] = gdf.delta_time.dt.tz_localize("UTC")
+    gdf["datetime"] = gdf.datetime.dt.tz_localize("UTC")
 
     return gdf
 
@@ -228,6 +269,13 @@ def read_points_from_atl08(
 
     combined_gdf = pd.concat(gdfs)
     combined_gdf.attrs["source_filename"] = filename
+
+    # Create utc timestamp string as a field. The datetime field itself loses
+    # precision on write, so it is worth maintaining a timestamp as a string
+    # column.
+    combined_gdf["utc_timestamp_string"] = combined_gdf["datetime"].apply(
+        lambda x: x.isoformat()
+    )
     combined_gdf = cast("gpd.GeoDataFrame", combined_gdf)
 
     return combined_gdf
@@ -390,8 +438,8 @@ def lines_from_atl08_points(
         # Track multilinestring and attrs per ground track
         multi_linestrings[ground_track] = {
             "geometry": multi_line,
-            "delta_time_start": points_for_track.delta_time.min(),
-            "delta_time_end": points_for_track.delta_time.max(),
+            "datetime_start": points_for_track.datetime.min(),
+            "datetime_end": points_for_track.datetime.max(),
         }
 
     all_lines = gpd.GeoDataFrame(
@@ -399,11 +447,11 @@ def lines_from_atl08_points(
             "ground_track": list(multi_linestrings.keys()),
             "source_filename": [list(set(points.source_filename))[0]]
             * len(multi_linestrings),
-            "delta_time_start": [
-                line["delta_time_start"] for line in multi_linestrings.values()
+            "datetime_start": [
+                line["datetime_start"] for line in multi_linestrings.values()
             ],
-            "delta_time_end": [
-                line["delta_time_end"] for line in multi_linestrings.values()
+            "datetime_end": [
+                line["datetime_end"] for line in multi_linestrings.values()
             ],
         },
         geometry=[line["geometry"] for line in multi_linestrings.values()],
