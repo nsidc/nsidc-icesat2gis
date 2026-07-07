@@ -26,6 +26,8 @@ ATL08_DEFAULT_GT_CORE_VARS = (
     "canopy/h_median_canopy",
     "canopy/h_mean_canopy",
     "canopy/h_canopy_abs",
+    "canopy/h_min_canopy_abs",
+    "canopy/h_max_canopy_abs",
     "canopy/h_median_canopy_abs",
     "canopy/h_mean_canopy_abs",
     "canopy/canopy_openness",
