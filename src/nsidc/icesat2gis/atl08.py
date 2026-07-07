@@ -40,6 +40,17 @@ ATL08_DEFAULT_GT_CORE_VARS = (
     "terrain/h_te_median",
     "terrain/h_te_mean",
     "terrain/photon_rate_te",
+    # Reference information
+    "solar_elevation",
+    "brightness_flag",
+    "urban_flag",
+    "rgt",
+    "layer_flag",
+    "msw_flag",
+    "dem_h",
+    # Lat/lon included separately as columns for easy queries.
+    "latitude",
+    "longitude",
 )
 
 ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL = (

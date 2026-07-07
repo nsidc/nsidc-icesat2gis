@@ -83,7 +83,11 @@ if __name__ == "__main__":
 
         variables = defaultdict(dict)
         for var_path in ATL08_DEFAULT_GT_CORE_VARS:
-            group_name, var_name = var_path.split("/")
+            if "/" not in var_path:
+                group_name = None
+                var_name = var_path
+            else:
+                group_name, var_name = var_path.split("/")
             data_var = land_seg_ds[var_path]
             subset_data = xr.concat(
                 [
@@ -101,7 +105,10 @@ if __name__ == "__main__":
                 # set the first 5 records to all-null to test filtering
                 subset_data[0:5] = np.nan
 
-            variables[group_name][var_name] = subset_data
+            if group_name:
+                variables[group_name][var_name] = subset_data
+            else:
+                variables[var_name] = subset_data
 
         test_ds = xr.DataTree.from_dict(
             {
