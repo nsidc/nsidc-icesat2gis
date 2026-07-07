@@ -171,6 +171,10 @@ def _read_points_for_gt(
         orientation=sc_orientation,
     )
 
+    # Get orbit characteristics
+    orbit_cycle_number = int(ds["orbit_info/cycle_number"][0])
+    orbit_number = int(ds["orbit_info/orbit_number"][0])
+
     # Construct gdf
     gdf = gpd.GeoDataFrame(
         data={
@@ -179,6 +183,8 @@ def _read_points_for_gt(
             "source_filename": [filename] * len(lons),
             "bm_strength": [beam_strength] * len(lons),
             "delta_time": delta_time,
+            "cycle_number": [orbit_cycle_number] * len(lons),
+            "orbit_number": [orbit_number] * len(lons),
             # User-provided variables
             **variables,
         },
