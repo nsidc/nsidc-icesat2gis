@@ -31,6 +31,7 @@ ATL08_DEFAULT_GT_CORE_VARS = (
     "canopy/canopy_openness",
     "canopy/h_dif_canopy",
     "canopy/photon_rate_can",
+    "canopy/canopy_h_metrics",
     # Terrain variables
     "terrain/h_te_best_fit",
     "terrain/h_te_uncertainty",
@@ -162,7 +163,18 @@ def _read_points_for_gt(
     variables = {}
     for var_path in variables_to_include:
         var_name = var_path.rsplit("/", maxsplit=1)[-1]
-        variables[var_name] = land_seg_group[var_path]
+        if "canopy_h_metrics" in var_name:
+            # Special case for canopy_h_metrics. This must be broken out into
+            # multiple columns.
+            h_can_metrics = land_seg_group[var_path]
+            # Create a list of values from 10-95 at increments of 5.
+            metrics_percents = list(range(10, 95 + 5, 5))
+            for metric_idx, h_can_metric in h_can_metrics.groupby("ds_metrics"):
+                variables[f"{var_name}{metrics_percents[metric_idx - 1]}"] = (
+                    h_can_metric.to_numpy().squeeze()
+                )
+        else:
+            variables[var_name] = land_seg_group[var_path]
 
     # Get the beam strength
     sc_orientation = int(ds["orbit_info/sc_orient"][0])

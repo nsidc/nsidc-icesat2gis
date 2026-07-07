@@ -25,7 +25,12 @@ def test_read_point_geoms_from_atl08(atl08_test_filepath):
     for core_var in [
         var_path.rsplit("/", maxsplit=1)[-1] for var_path in ATL08_DEFAULT_GT_CORE_VARS
     ]:
-        assert points[core_var] is not None
+        if "canopy_h_metrics" in core_var:
+            expected_metrics_percents = list(range(10, 95 + 5, 5))
+            for expected_metrics_percent in expected_metrics_percents:
+                assert points[f"{core_var}{expected_metrics_percent}"] is not None
+        else:
+            assert points[core_var] is not None
 
     assert len(set(points["bm_strength"])) == 2
     assert "weak" in set(points["bm_strength"])
