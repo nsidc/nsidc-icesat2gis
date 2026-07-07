@@ -13,10 +13,10 @@ from shapely.geometry import MultiLineString
 
 from nsidc.icesat2gis.exceptions import ICESat2GISError, ICESat2MissingDataError
 
-GroundTrack = Literal["gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"]
+Beam = Literal["gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"]
 
 
-# Default ground_track core variables for ATL08.
+# Default beam core variables for ATL08.
 ATL08_DEFAULT_GT_CORE_VARS = (
     "canopy/h_canopy",
     "canopy/h_mean_canopy",
@@ -41,10 +41,10 @@ BeamStrength = Literal["weak", "strong"]
 
 def _beam_strength_from_orientation(
     *,
-    ground_track: GroundTrack,
+    beam: Beam,
     orientation: int,
 ) -> BeamStrength:
-    """Return 'weak' or 'strong' depending on the ground track and spacecraft orientation.
+    """Return 'weak' or 'strong' depending on the beam and spacecraft orientation.
 
     Orientation can be found in the "orbit_info/sc_orient" variable and take a
     value of either 0, 1, or 2. A value of 0 indicates that the spacecraft is
@@ -57,7 +57,7 @@ def _beam_strength_from_orientation(
         msg = "Expected a spacecraft orientation value of 0 or 1. Got: {orientation=}"
         raise ICESat2GISError(msg)
 
-    orientation_mapping: dict[int, dict[GroundTrack, BeamStrength]] = {
+    orientation_mapping: dict[int, dict[Beam, BeamStrength]] = {
         # Backward config
         0: {
             "gt1l": "strong",
@@ -78,26 +78,26 @@ def _beam_strength_from_orientation(
         },
     }
 
-    beam_strength = orientation_mapping[orientation][ground_track]
+    beam_strength = orientation_mapping[orientation][beam]
 
     return beam_strength
 
 
 def _read_points_for_gt(
     *,
-    ground_track: GroundTrack,
+    beam: Beam,
     ds: xr.DataTree,
     filename: str,
     variables_to_include: Sequence[str],
     variables_to_check_all_null: Sequence[str],
 ) -> gpd.GeoDataFrame:
-    """Reads 100m segment points from ATL08 for the given ground track.
+    """Reads 100m segment points from ATL08 for the given beam.
 
-    Raises an `ICESat2MissingDataError` when a ground track is missing data
-    (either the ground track group or the ground track's `land_segments` group
+    Raises an `ICESat2MissingDataError` when a beam is missing data
+    (either the beam group or the beam's `land_segments` group
     is missing).
 
-    * `ground_track`: one of "gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"
+    * `beam`: one of "gt1l", "gt1r", "gt2l", "gt2r", "gt3l", "gt3r"
     * `filepath`: filepath to the ATL08 granule
     * `variables_to_include`: sequence of strings representing GT variables to
       include in the output (e.g,. `"canopy/h_canopy"`).
@@ -123,11 +123,11 @@ def _read_points_for_gt(
         raise ICESat2GISError(msg)
 
     try:
-        land_seg_group = ds[f"{ground_track}/land_segments/"]
+        land_seg_group = ds[f"{beam}/land_segments/"]
     except KeyError as e:
-        # This could be because the ground track group is missing, or the
+        # This could be because the beam group is missing, or the
         # `land_segments` group is missing.
-        msg = f"No `land_segment` data for {ground_track} from {filename}: {e}"
+        msg = f"No `land_segment` data for {beam} from {filename}: {e}"
         print(msg)
         raise ICESat2MissingDataError(msg) from e
 
@@ -144,7 +144,7 @@ def _read_points_for_gt(
     # Get the beam strength
     sc_orientation = int(ds["orbit_info/sc_orient"][0])
     beam_strength = _beam_strength_from_orientation(
-        ground_track=ground_track,
+        beam=beam,
         orientation=sc_orientation,
     )
 
@@ -152,7 +152,7 @@ def _read_points_for_gt(
     gdf = gpd.GeoDataFrame(
         data={
             # Reference info
-            "ground_track": [ground_track] * len(lons),
+            "beam": [beam] * len(lons),
             "source_filename": [filename] * len(lons),
             "bm_strength": [beam_strength] * len(lons),
             "delta_time": delta_time,
@@ -188,7 +188,7 @@ def read_points_from_atl08(
         str
     ] = ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
 ) -> gpd.GeoDataFrame:
-    """Return a GeoDataFrame containing points representing ground tracks."""
+    """Return a GeoDataFrame containing points representing beams."""
     ds = xr.open_datatree(
         filepath,
         chunks={},
@@ -197,10 +197,10 @@ def read_points_from_atl08(
     filename = Path(ds.encoding["source"]).name
 
     gdfs = []
-    for ground_track in get_args(GroundTrack):
+    for beam in get_args(Beam):
         try:
             gdf = _read_points_for_gt(
-                ground_track=ground_track,
+                beam=beam,
                 filename=filename,
                 ds=ds,
                 variables_to_include=gt_variables_to_include,
@@ -211,7 +211,7 @@ def read_points_from_atl08(
             continue
 
     if not gdfs:
-        msg = f"Found no valid ground track data for {filepath}"
+        msg = f"Found no valid beam data for {filepath}"
         raise ICESat2MissingDataError(msg)
 
     combined_gdf = pd.concat(gdfs)
@@ -305,12 +305,12 @@ def lines_from_atl08_points(
     isolated_point_line_meters: int = 17,  # 17m is the approx. ground spot size of ICESat2.
     simplify_line_tolerance: None | float = None,
 ) -> gpd.GeoDataFrame:
-    """Return a GeoDataFrame containing linestrings representing ground tracks.
+    """Return a GeoDataFrame containing linestrings representing beams.
 
-    GeoDataFrame contains one MultiLineString per ground track from the
+    GeoDataFrame contains one MultiLineString per beam from the
     `land_segments` group in the given ATL08 filepath.
 
-    Each consitutient LineString in the MultiLineString for a ground track
+    Each consitutient LineString in the MultiLineString for a beam
     represents a continuous line of points with valid observations. Gaps greater
     than `gap_threshold_meters` are where linestrings are split, so that no-data
     areas are more obvious.
@@ -331,12 +331,12 @@ def lines_from_atl08_points(
     length and the isolated point is the center of that line. This is
     also be misleading, because we would only be representing this in one axis
     (line length - polyons would be necessary to capture the actual "shape" of
-    the ground track).
+    the beam).
     """
     geod = Geod(ellps="WGS84")
     multi_linestrings = {}
-    for ground_track in set(points.ground_track):
-        points_for_track = points[points.ground_track == ground_track].copy()
+    for beam in set(points.beam):
+        points_for_track = points[points.beam == beam].copy()
 
         # Distances between consecutive pairs in meters
         _, _, distances = geod.inv(
@@ -375,8 +375,8 @@ def lines_from_atl08_points(
 
         multi_line = MultiLineString(lines=list(lines))
 
-        # Track multilinestring and attrs per ground track
-        multi_linestrings[ground_track] = {
+        # Track multilinestring and attrs per beam
+        multi_linestrings[beam] = {
             "geometry": multi_line,
             "delta_time_start": points_for_track.delta_time.min(),
             "delta_time_end": points_for_track.delta_time.max(),
@@ -384,7 +384,7 @@ def lines_from_atl08_points(
 
     all_lines = gpd.GeoDataFrame(
         data={
-            "ground_track": list(multi_linestrings.keys()),
+            "beam": list(multi_linestrings.keys()),
             "source_filename": [list(set(points.source_filename))[0]]
             * len(multi_linestrings),
             "delta_time_start": [

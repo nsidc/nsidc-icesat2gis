@@ -2,6 +2,7 @@
 
 - Add `bm_strength` field that indicates beam strength (weak or strong) for each
   point.
+- Rename `ground_track` field to `beam`.
 
 # v0.4.0 (2026-06-01)
 
