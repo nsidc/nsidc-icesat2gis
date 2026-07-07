@@ -204,7 +204,9 @@ def _read_points_for_gt(
             "ground_track": [ground_track] * len(lons),
             "source_filename": [filename] * len(lons),
             "bm_strength": [beam_strength] * len(lons),
-            "delta_time": delta_time,
+            # rename to datetime, since this has been decoded to datetime
+            # objects.
+            "datetime": delta_time,
             "cycle_number": [orbit_cycle_number] * len(lons),
             "orbit_number": [orbit_number] * len(lons),
             # User-provided variables
@@ -226,7 +228,7 @@ def _read_points_for_gt(
 
     # Localize the timestamp to UTC. Otherwise it inherits the system TZ
     # (e.g., MST).
-    gdf["delta_time"] = gdf.delta_time.dt.tz_localize("UTC")
+    gdf["datetime"] = gdf.datetime.dt.tz_localize("UTC")
 
     return gdf
 
@@ -267,6 +269,13 @@ def read_points_from_atl08(
 
     combined_gdf = pd.concat(gdfs)
     combined_gdf.attrs["source_filename"] = filename
+
+    # Create utc timestamp string as a field. The datetime field itself loses
+    # precision on write, so it is worth maintaining a timestamp as a string
+    # column.
+    combined_gdf["utc_timestamp_string"] = combined_gdf["datetime"].apply(
+        lambda x: x.isoformat()
+    )
     combined_gdf = cast("gpd.GeoDataFrame", combined_gdf)
 
     return combined_gdf
@@ -429,8 +438,8 @@ def lines_from_atl08_points(
         # Track multilinestring and attrs per ground track
         multi_linestrings[ground_track] = {
             "geometry": multi_line,
-            "delta_time_start": points_for_track.delta_time.min(),
-            "delta_time_end": points_for_track.delta_time.max(),
+            "datetime_start": points_for_track.datetime.min(),
+            "datetime_end": points_for_track.datetime.max(),
         }
 
     all_lines = gpd.GeoDataFrame(
@@ -438,11 +447,11 @@ def lines_from_atl08_points(
             "ground_track": list(multi_linestrings.keys()),
             "source_filename": [list(set(points.source_filename))[0]]
             * len(multi_linestrings),
-            "delta_time_start": [
-                line["delta_time_start"] for line in multi_linestrings.values()
+            "datetime_start": [
+                line["datetime_start"] for line in multi_linestrings.values()
             ],
-            "delta_time_end": [
-                line["delta_time_end"] for line in multi_linestrings.values()
+            "datetime_end": [
+                line["datetime_end"] for line in multi_linestrings.values()
             ],
         },
         geometry=[line["geometry"] for line in multi_linestrings.values()],

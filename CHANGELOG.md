@@ -1,10 +1,16 @@
 # v0.5.0 (TBD)
 
+ATL08 updates:
+
 - Add `bm_strength` field that indicates beam strength (weak or strong) for each
   point.
 - Add new default variables for ATL08 points based on feedback from user
   community survey.
 - Decode flag values into their string representation.
+- Add `utc_timestamp_string` to ensure that the full resolution datetime data
+  are included when writing to formats (e.g., geopackage) that have reduced
+  datetime precision.
+- Rename decoded `delta_time` to `datetime`.
 
 # v0.4.0 (2026-06-01)
 

@@ -22,6 +22,8 @@ def test_read_point_geoms_from_atl08(atl08_test_filepath):
     # test data - ATL08 generally has 6 ground tracks.)
     assert len(set(points.ground_track)) == 5
 
+    assert points.utc_timestamp_string is not None
+
     for core_var in [
         var_path.rsplit("/", maxsplit=1)[-1] for var_path in ATL08_DEFAULT_GT_CORE_VARS
     ]:
@@ -55,8 +57,8 @@ def test_lines_from_atl08_points(atl08_test_filepath):
     assert lines is not None
     assert len(lines.ground_track) == 5
 
-    assert lines.delta_time_start is not None
-    assert lines.delta_time_end is not None
+    assert lines.datetime_start is not None
+    assert lines.datetime_end is not None
 
 
 def test__linestring_for_isolated_point(atl08_test_filepath):
