@@ -163,18 +163,26 @@ def _read_points_for_gt(
     variables = {}
     for var_path in variables_to_include:
         var_name = var_path.rsplit("/", maxsplit=1)[-1]
+        variable = land_seg_group[var_path]
         if "canopy_h_metrics" in var_name:
             # Special case for canopy_h_metrics. This must be broken out into
             # multiple columns.
-            h_can_metrics = land_seg_group[var_path]
             # Create a list of values from 10-95 at increments of 5.
             metrics_percents = list(range(10, 95 + 5, 5))
-            for metric_idx, h_can_metric in h_can_metrics.groupby("ds_metrics"):
+            for metric_idx, h_can_metric in variable.groupby("ds_metrics"):
                 variables[f"{var_name}{metrics_percents[metric_idx - 1]}"] = (
                     h_can_metric.to_numpy().squeeze()
                 )
+        elif "flag_meanings" in variable.attrs:
+            # Decode flag meanings
+            flag_meanings = variable.flag_meanings.split(" ")
+            flag_values = variable.flag_values
+            flag_mapping = dict(zip(flag_values, flag_meanings, strict=True))
+            decoded_values = [flag_mapping[val] for val in variable.to_numpy()]
+            variables[var_name] = decoded_values
         else:
-            variables[var_name] = land_seg_group[var_path]
+            # Just use the variable as-is
+            variables[var_name] = variable
 
     # Get the beam strength
     sc_orientation = int(ds["orbit_info/sc_orient"][0])

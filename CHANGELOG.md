@@ -4,6 +4,7 @@
   point.
 - Add new default variables for ATL08 points based on feedback from user
   community survey.
+- Decode flag values into their string representation.
 
 # v0.4.0 (2026-06-01)
 

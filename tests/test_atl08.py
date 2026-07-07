@@ -32,6 +32,16 @@ def test_read_point_geoms_from_atl08(atl08_test_filepath):
         else:
             assert points[core_var] is not None
 
+            # Ensure flag values were decoded from int to string.
+            if "urban_flag" in core_var:
+                assert "not_urban" in points[core_var].values
+            elif "brightness_flag" in core_var:
+                assert "bright_surface" in points[core_var].values
+            elif "layer_flag" in core_var:
+                assert "likely_cloudy" in points[core_var].values
+            elif "msw_flag" in core_var:
+                assert "blow_snow_od_lt_0.5" in points[core_var].values
+
     assert len(set(points["bm_strength"])) == 2
     assert "weak" in set(points["bm_strength"])
     assert "strong" in set(points["bm_strength"])
