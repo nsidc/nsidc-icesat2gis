@@ -11,6 +11,9 @@ ATL08 updates:
   are included when writing to formats (e.g., geopackage) that have reduced
   datetime precision.
 - Rename decoded `delta_time` to `datetime`.
+- Add new functions `geodataframe_from_atl08` and `dataframe_from_atl08`,
+  separating logic between reading data as a `pandas.DataFrame` and a
+  `geopandas.GeoDataFrame`.
 
 # v0.4.0 (2026-06-01)
 

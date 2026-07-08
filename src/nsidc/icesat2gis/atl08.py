@@ -158,7 +158,6 @@ def _read_points_for_gt(
         raise ICESat2MissingDataError(msg) from e
 
     # Extract variables
-    lats = land_seg_group.latitude
     lons = land_seg_group.longitude
     delta_time = land_seg_group.delta_time
 
@@ -197,8 +196,8 @@ def _read_points_for_gt(
     orbit_cycle_number = int(ds["orbit_info/cycle_number"][0])
     orbit_number = int(ds["orbit_info/orbit_number"][0])
 
-    # Construct gdf
-    gdf = gpd.GeoDataFrame(
+    # Construct df
+    df = pd.DataFrame(
         data={
             # Reference info
             "ground_track": [ground_track] * len(lons),
@@ -212,8 +211,6 @@ def _read_points_for_gt(
             # User-provided variables
             **variables,
         },
-        geometry=gpd.points_from_xy(lons, lats),
-        crs="EPSG:4326",
     )
 
     # Drop points that are all-NaN for the user's selected variables.
@@ -221,14 +218,90 @@ def _read_points_for_gt(
         variables_to_check_all_null_names = [
             var.rsplit("/", maxsplit=1)[-1] for var in variables_to_check_all_null
         ]
-        gdf = gdf.dropna(
+        df = df.dropna(
             subset=variables_to_check_all_null_names,
             how="all",
         ).reset_index(drop=True)
 
     # Localize the timestamp to UTC. Otherwise it inherits the system TZ
     # (e.g., MST).
-    gdf["datetime"] = gdf.datetime.dt.tz_localize("UTC")
+    df["datetime"] = df.datetime.dt.tz_localize("UTC")
+
+    return df
+
+
+def dataframe_from_atl08(
+    *,
+    filepath: Path | earthaccess.store.EarthAccessFile,
+    gt_variables_to_include: Sequence[str] = ATL08_DEFAULT_GT_CORE_VARS,
+    gt_variables_to_check_all_null: Sequence[
+        str
+    ] = ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
+) -> pd.DataFrame:
+    """Return a pandas DataFrame containing points representing ground tracks."""
+    ds = xr.open_datatree(
+        filepath,
+        chunks={},
+        phony_dims="sort",
+    )
+
+    filename = Path(ds.encoding["source"]).name
+
+    dfs = []
+    for ground_track in get_args(GroundTrack):
+        try:
+            df = _read_points_for_gt(
+                ground_track=ground_track,
+                filename=filename,
+                ds=ds,
+                variables_to_include=gt_variables_to_include,
+                variables_to_check_all_null=gt_variables_to_check_all_null,
+            )
+            dfs.append(df)
+        except ICESat2MissingDataError:
+            continue
+
+    if not dfs:
+        msg = f"Found no valid ground track data for {filepath}"
+        raise ICESat2MissingDataError(msg)
+
+    combined_df = pd.concat(dfs)
+    combined_df.attrs["source_filename"] = filename
+
+    # Create utc timestamp string as a field. The datetime field itself loses
+    # precision on write, so it is worth maintaining a timestamp as a string
+    # column.
+    combined_df["utc_timestamp_string"] = combined_df["datetime"].apply(
+        lambda x: x.isoformat()
+    )
+
+    combined_df = cast("pd.DataFrame", combined_df)
+
+    return combined_df
+
+
+def geodataframe_from_atl08(
+    *,
+    filepath: Path | earthaccess.store.EarthAccessFile,
+    gt_variables_to_include: Sequence[str] = ATL08_DEFAULT_GT_CORE_VARS,
+    gt_variables_to_check_all_null: Sequence[
+        str
+    ] = ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
+) -> gpd.GeoDataFrame:
+    """Return a GeoDataFrame containing points representing ground tracks."""
+    df = dataframe_from_atl08(
+        filepath=filepath,
+        gt_variables_to_include=gt_variables_to_include,
+        gt_variables_to_check_all_null=gt_variables_to_check_all_null,
+    )
+
+    gdf = gpd.GeoDataFrame(
+        df,
+        geometry=gpd.points_from_xy(df.longitude, df.latitude),
+        crs="EPSG:4326",
+    )
+
+    gdf = cast("gpd.GeoDataFrame", gdf)
 
     return gdf
 
@@ -242,44 +315,11 @@ def read_points_from_atl08(
     ] = ATL08_DEFAULT_VARIABLES_TO_CHECK_ALL_NULL,
 ) -> gpd.GeoDataFrame:
     """Return a GeoDataFrame containing points representing ground tracks."""
-    ds = xr.open_datatree(
-        filepath,
-        chunks={},
-        phony_dims="sort",
+    return geodataframe_from_atl08(
+        filepath=filepath,
+        gt_variables_to_include=gt_variables_to_include,
+        gt_variables_to_check_all_null=gt_variables_to_check_all_null,
     )
-
-    filename = Path(ds.encoding["source"]).name
-
-    gdfs = []
-    for ground_track in get_args(GroundTrack):
-        try:
-            gdf = _read_points_for_gt(
-                ground_track=ground_track,
-                filename=filename,
-                ds=ds,
-                variables_to_include=gt_variables_to_include,
-                variables_to_check_all_null=gt_variables_to_check_all_null,
-            )
-            gdfs.append(gdf)
-        except ICESat2MissingDataError:
-            continue
-
-    if not gdfs:
-        msg = f"Found no valid ground track data for {filepath}"
-        raise ICESat2MissingDataError(msg)
-
-    combined_gdf = pd.concat(gdfs)
-    combined_gdf.attrs["source_filename"] = filename
-
-    # Create utc timestamp string as a field. The datetime field itself loses
-    # precision on write, so it is worth maintaining a timestamp as a string
-    # column.
-    combined_gdf["utc_timestamp_string"] = combined_gdf["datetime"].apply(
-        lambda x: x.isoformat()
-    )
-    combined_gdf = cast("gpd.GeoDataFrame", combined_gdf)
-
-    return combined_gdf
 
 
 def get_atl08_points(**search_kwargs) -> Iterator[gpd.GeoDataFrame]:
