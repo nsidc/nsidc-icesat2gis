@@ -245,6 +245,7 @@ def read_points_from_atl08(
     ds = xr.open_datatree(
         filepath,
         chunks={},
+        phony_dims="sort",
     )
 
     filename = Path(ds.encoding["source"]).name
