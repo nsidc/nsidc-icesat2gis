@@ -1,3 +1,10 @@
+# v0.6.0 (2026-07-21)
+
+ATL08 updates:
+
+- Update dtypes for `orbit_number` (`int64` -> `int32`) and `cycle_number`
+  (`int64` -> `int16`).
+
 # v0.5.0 (2026-07-20)
 
 ATL08 updates:
