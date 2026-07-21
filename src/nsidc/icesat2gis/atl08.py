@@ -193,8 +193,8 @@ def _read_points_for_gt(
     )
 
     # Get orbit characteristics
-    orbit_cycle_number = int(ds["orbit_info/cycle_number"][0])
-    orbit_number = int(ds["orbit_info/orbit_number"][0])
+    orbit_cycle_numbers = np.full(len(lons), np.int16(ds["orbit_info/cycle_number"][0]))
+    orbit_numbers = np.full(len(lons), np.int32(ds["orbit_info/orbit_number"][0]))
 
     # Construct df
     df = pd.DataFrame(
@@ -206,8 +206,8 @@ def _read_points_for_gt(
             # rename to datetime, since this has been decoded to datetime
             # objects.
             "datetime": delta_time,
-            "cycle_number": [orbit_cycle_number] * len(lons),
-            "orbit_number": [orbit_number] * len(lons),
+            "cycle_number": orbit_cycle_numbers,
+            "orbit_number": orbit_numbers,
             # User-provided variables
             **variables,
         },
