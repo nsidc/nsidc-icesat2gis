@@ -291,6 +291,8 @@ def geodataframe_from_atl08(
         crs="EPSG:4326",
     )
 
+    gdf.attrs = df.attrs.copy()
+
     gdf = cast("gpd.GeoDataFrame", gdf)
 
     return gdf

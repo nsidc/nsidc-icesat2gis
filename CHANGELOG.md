@@ -6,6 +6,7 @@ ATL08 updates:
   - Metrics columns: avoid converting to numpy on each metric index
   - Streamlined dataframe construction (avoid creating lists of `len(lons)`)
   - Improved decoding of flag values
+- Fixed issue where attrs attached to `df` were not copied to `gdf`.
 
 # v0.6.0 (2026-07-21)
 
