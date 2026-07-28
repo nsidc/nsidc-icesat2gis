@@ -188,6 +188,11 @@ def _read_points_for_gt(
         orientation=sc_orientation,
     )
 
+    # rename to datetime, since this has been decoded to datetime
+    # objects. Setting this value also ensures that there is at least one
+    # variable of the proper length when constructing the dataframe below.
+    variables["datetime"] = delta_time
+
     # Construct df from variables
     df = pd.DataFrame(variables)
 
@@ -196,9 +201,6 @@ def _read_points_for_gt(
     df["ground_track"] = ground_track
     df["source_filename"] = filename
     df["bm_strength"] = beam_strength
-    # rename to datetime, since this has been decoded to datetime
-    # objects.
-    df["datetime"] = delta_time
     # Get orbit characteristics
     df["orbit_number"] = np.int32(ds["orbit_info/orbit_number"][0])
     df["cycle_number"] = np.int16(ds["orbit_info/cycle_number"][0])
