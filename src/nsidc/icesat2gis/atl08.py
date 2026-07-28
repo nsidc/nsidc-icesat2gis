@@ -158,7 +158,6 @@ def _read_points_for_gt(
         raise ICESat2MissingDataError(msg) from e
 
     # Extract variables
-    lons = land_seg_group.longitude
     delta_time = land_seg_group.delta_time
 
     variables = {}
@@ -176,13 +175,11 @@ def _read_points_for_gt(
         elif "flag_meanings" in variable.attrs:
             # Decode flag meanings
             flag_meanings = variable.flag_meanings.split(" ")
-            flag_values = variable.flag_values
-            flag_mapping = dict(zip(flag_values, flag_meanings, strict=True))
-            decoded_values = [flag_mapping[val] for val in variable.to_numpy()]
+            decoded_values = np.array(flag_meanings)[variable.to_numpy()]
             variables[var_name] = decoded_values
         else:
             # Just use the variable as-is
-            variables[var_name] = variable
+            variables[var_name] = variable.to_numpy()
 
     # Get the beam strength
     sc_orientation = int(ds["orbit_info/sc_orient"][0])
@@ -191,26 +188,20 @@ def _read_points_for_gt(
         orientation=sc_orientation,
     )
 
-    # Get orbit characteristics
-    orbit_cycle_numbers = np.full(len(lons), np.int16(ds["orbit_info/cycle_number"][0]))
-    orbit_numbers = np.full(len(lons), np.int32(ds["orbit_info/orbit_number"][0]))
+    # Construct df from variables
+    df = pd.DataFrame(variables)
 
-    # Construct df
-    df = pd.DataFrame(
-        data={
-            # Reference info
-            "ground_track": [ground_track] * len(lons),
-            "source_filename": [filename] * len(lons),
-            "bm_strength": [beam_strength] * len(lons),
-            # rename to datetime, since this has been decoded to datetime
-            # objects.
-            "datetime": delta_time,
-            "cycle_number": orbit_cycle_numbers,
-            "orbit_number": orbit_numbers,
-            # User-provided variables
-            **variables,
-        },
-    )
+    # Add other columns. Scalars are broadcast to the correct len.
+    # Reference info
+    df["ground_track"] = ground_track
+    df["source_filename"] = filename
+    df["bm_strength"] = beam_strength
+    # rename to datetime, since this has been decoded to datetime
+    # objects.
+    df["datetime"] = delta_time
+    # Get orbit characteristics
+    df["orbit_number"] = np.int32(ds["orbit_info/orbit_number"][0])
+    df["cycle_number"] = np.int16(ds["orbit_info/cycle_number"][0])
 
     # Drop points that are all-NaN for the user's selected variables.
     if variables_to_check_all_null:
