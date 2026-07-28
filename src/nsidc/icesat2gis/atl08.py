@@ -175,7 +175,9 @@ def _read_points_for_gt(
         elif "flag_meanings" in variable.attrs:
             # Decode flag meanings
             flag_meanings = variable.flag_meanings.split(" ")
-            decoded_values = np.array(flag_meanings)[variable.to_numpy()]
+            flag_values = variable.flag_values
+            flag_mapping = dict(zip(flag_values, flag_meanings, strict=True))
+            decoded_values = [flag_mapping[val] for val in variable.to_numpy()]
             variables[var_name] = decoded_values
         else:
             # Just use the variable as-is
