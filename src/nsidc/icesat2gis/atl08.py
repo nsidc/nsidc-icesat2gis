@@ -170,10 +170,9 @@ def _read_points_for_gt(
             # multiple columns.
             # Create a list of values from 10-95 at increments of 5.
             metrics_percents = list(range(10, 95 + 5, 5))
-            for metric_idx, h_can_metric in variable.groupby("ds_metrics"):
-                variables[f"{var_name}{metrics_percents[metric_idx - 1]}"] = (
-                    h_can_metric.to_numpy().squeeze()
-                )
+            metrics_array = variable.to_numpy()  # Shape: (n_points, n_metrics)
+            for idx, percent in enumerate(metrics_percents):
+                variables[f"{var_name}{percent}"] = metrics_array[:, idx]
         elif "flag_meanings" in variable.attrs:
             # Decode flag meanings
             flag_meanings = variable.flag_meanings.split(" ")
