@@ -1,3 +1,12 @@
+# v0.7.0 (2026-07-28)
+
+ATL08 updates:
+
+- Optimizations to how ATL08 data are processed:
+  - Metrics columns: avoid converting to numpy on each metric index
+  - Streamlined dataframe construction (avoid creating lists of `len(lons)`)
+- Fixed issue where attrs attached to `df` were not copied to `gdf`.
+
 # v0.6.0 (2026-07-21)
 
 ATL08 updates:
